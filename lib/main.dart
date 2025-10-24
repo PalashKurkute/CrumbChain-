@@ -159,7 +159,8 @@ class HomePage extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const LoginPage(),
+                              builder: (context) =>
+                                  const LoginPage(userType: 'donor'),
                             ),
                           );
                         },
@@ -191,7 +192,8 @@ class HomePage extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const LoginPage(),
+                              builder: (context) =>
+                                  const LoginPage(userType: 'receiver'),
                             ),
                           );
                         },

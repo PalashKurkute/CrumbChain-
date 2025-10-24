@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'signup_page.dart';
+import '../services/auth_service.dart';
+import '../models/user.dart';
+import 'donor_home_page.dart';
+import 'receiver_home_page.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  final String userType; // 'donor' or 'receiver'
+
+  const LoginPage({super.key, required this.userType});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -11,13 +17,83 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _authService = AuthService();
   bool _obscurePassword = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleSignIn() async {
+    // Validate inputs
+    if (_emailController.text.trim().isEmpty ||
+        _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter both email and password'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final result = await _authService.login(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      if (!mounted) return;
+
+      if (result['success'] == true) {
+        final user = result['user'] as User;
+
+        // Navigate to appropriate home page based on user type
+        if (user.isDonor) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => DonorHomePage(user: user)),
+          );
+        } else if (user.isReceiver) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ReceiverHomePage(user: user),
+            ),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? 'Login failed'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -221,15 +297,7 @@ class _LoginPageState extends State<LoginPage> {
                           width: double.infinity,
                           height: 56,
                           child: ElevatedButton(
-                            onPressed: () {
-                              // TODO: Implement sign in logic
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Sign In clicked'),
-                                  duration: Duration(seconds: 1),
-                                ),
-                              );
-                            },
+                            onPressed: _isLoading ? null : _handleSignIn,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.black,
                               foregroundColor: Colors.white,
@@ -238,13 +306,24 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                               elevation: 3,
                             ),
-                            child: const Text(
-                              'Sign In',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                : const Text(
+                                    'Sign In',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                           ),
                         ),
                         const SizedBox(height: 30),
@@ -337,7 +416,8 @@ class _LoginPageState extends State<LoginPage> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => const SignUpPage(),
+                                    builder: (context) =>
+                                        SignUpPage(userType: widget.userType),
                                   ),
                                 );
                               },
