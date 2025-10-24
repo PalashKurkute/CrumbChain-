@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'constants/app_colors.dart';
+import 'pages/login_page.dart';
 
 void main() {
   runApp(const CrumbChainApp());
@@ -23,7 +24,65 @@ class CrumbChainApp extends StatelessWidget {
         fontFamily: 'Roboto',
         scaffoldBackgroundColor: AppColors.accent2,
       ),
-      home: const HomePage(),
+      home: const SplashScreen(),
+    );
+  }
+}
+
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Navigate to HomePage after 2.5 seconds
+    Future.delayed(const Duration(milliseconds: 2500), () {
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const HomePage()),
+        );
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFFCEFDD),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              'assets/images/logo.png',
+              width: 200,
+              height: 200,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                return Icon(
+                  Icons.volunteer_activism,
+                  size: 150,
+                  color: const Color(0xFFE07A3E),
+                );
+              },
+            ),
+            const SizedBox(height: 40),
+            const SizedBox(
+              width: 40,
+              height: 40,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE07A3E)),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -34,7 +93,7 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFFCEFDD),
       body: SafeArea(
         child: Column(
           children: [
@@ -43,44 +102,20 @@ class HomePage extends StatelessWidget {
               flex: 45,
               child: Container(
                 width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFCEFDD),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(30),
-                    bottomRight: Radius.circular(30),
-                  ),
-                ),
+                color: const Color(0xFFFCEFDD),
                 child: Center(
-                  child: Container(
+                  child: Image.asset(
+                    'assets/images/logo.png',
                     width: 180,
                     height: 180,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 15,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    padding: const EdgeInsets.all(15),
-                    child: ClipOval(
-                      child: Image.asset(
-                        'assets/images/logo.png',
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Center(
-                            child: Icon(
-                              Icons.volunteer_activism,
-                              size: 80,
-                              color: const Color(0xFFE07A3E),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Icon(
+                        Icons.volunteer_activism,
+                        size: 120,
+                        color: const Color(0xFFE07A3E),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -91,7 +126,13 @@ class HomePage extends StatelessWidget {
               flex: 55,
               child: Container(
                 width: double.infinity,
-                color: Colors.white,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(30),
+                    topRight: Radius.circular(30),
+                  ),
+                ),
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -115,11 +156,10 @@ class HomePage extends StatelessWidget {
                       height: 56,
                       child: ElevatedButton(
                         onPressed: () {
-                          // TODO: Navigate to Donor page
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Donor selected'),
-                              duration: Duration(seconds: 1),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const LoginPage(),
                             ),
                           );
                         },
@@ -148,11 +188,10 @@ class HomePage extends StatelessWidget {
                       height: 56,
                       child: ElevatedButton(
                         onPressed: () {
-                          // TODO: Navigate to Receiver page
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Receiver selected'),
-                              duration: Duration(seconds: 1),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const LoginPage(),
                             ),
                           );
                         },
