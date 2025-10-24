@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'constants/app_colors.dart';
 import 'pages/login_page.dart';
+import 'services/auth_service.dart';
+import 'pages/donor_home_page.dart';
+import 'pages/receiver_home_page.dart';
 
 void main() {
   runApp(const CrumbChainApp());
@@ -37,17 +40,45 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  final AuthService _authService = AuthService();
+
   @override
   void initState() {
     super.initState();
-    // Navigate to HomePage after 2.5 seconds
-    Future.delayed(const Duration(milliseconds: 2500), () {
-      if (mounted) {
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    // Show splash screen for at least 2.5 seconds
+    await Future.delayed(const Duration(milliseconds: 2500));
+
+    if (!mounted) return;
+
+    // Check if user is already logged in
+    final user = await _authService.getCurrentUser();
+
+    if (user != null) {
+      // User is logged in, navigate to appropriate home page
+      if (user.isDonor) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => DonorHomePage(user: user)),
+        );
+      } else if (user.isReceiver) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => ReceiverHomePage(user: user)),
+        );
+      } else {
+        // Unknown user type, go to home page
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const HomePage()),
         );
       }
-    });
+    } else {
+      // User is not logged in, go to home page
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const HomePage()),
+      );
+    }
   }
 
   @override

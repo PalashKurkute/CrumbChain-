@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../models/user.dart';
+import '../main.dart';
 
 class ReceiverHomePage extends StatefulWidget {
   final User user;
@@ -27,7 +28,10 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
             onPressed: () async {
               await _authService.logout();
               if (context.mounted) {
-                Navigator.of(context).pushReplacementNamed('/');
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const HomePage()),
+                  (route) => false,
+                );
               }
             },
           ),

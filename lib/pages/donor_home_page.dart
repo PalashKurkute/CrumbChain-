@@ -1,6 +1,14 @@
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
 import '../models/user.dart';
+import '../services/auth_service.dart';
+import '../main.dart';
+import '../widgets/common_footer.dart';
+import 'create_listing_page.dart';
+import 'listing_tracker_page.dart';
+import 'listing_history_page.dart';
+import 'recommend_schemes_page.dart';
+import 'how_it_works_page.dart';
+import 'impact_tracker_page.dart';
 
 class DonorHomePage extends StatefulWidget {
   final User user;
@@ -12,147 +20,432 @@ class DonorHomePage extends StatefulWidget {
 }
 
 class _DonorHomePageState extends State<DonorHomePage> {
-  final AuthService _authService = AuthService();
+  int _selectedIndex = 1; // Start with Home selected (center)
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFCEFDD),
-      appBar: AppBar(
-        title: const Text('Donor Dashboard'),
-        backgroundColor: const Color(0xFFE07A3E),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await _authService.logout();
-              if (context.mounted) {
-                Navigator.of(context).pushReplacementNamed('/');
-              }
-            },
-          ),
-        ],
-      ),
+      backgroundColor: Colors.white, // White background
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Welcome, ${widget.user.fullName}!',
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Email: ${widget.user.email}',
-                style: TextStyle(fontSize: 16, color: Colors.grey[700]),
-              ),
-              const SizedBox(height: 30),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const SizedBox(height: 16),
 
-              // Donor specific content
-              Expanded(
-                child: GridView.count(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 15,
-                  mainAxisSpacing: 15,
+                // Logo and Profile Button section
+                Stack(
+                  alignment: Alignment.center,
                   children: [
-                    _buildDashboardCard(
-                      icon: Icons.add_circle,
-                      title: 'Donate Food',
-                      color: const Color(0xFFE07A3E),
-                      onTap: () {
-                        // TODO: Navigate to donate food page
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Donate Food - Coming Soon'),
-                          ),
-                        );
-                      },
+                    // Centered Logo
+                    Center(
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        width: 120,
+                        height: 120,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(
+                            Icons.volunteer_activism,
+                            size: 100,
+                            color: Color(0xFFE07A3E),
+                          );
+                        },
+                      ),
                     ),
-                    _buildDashboardCard(
-                      icon: Icons.history,
-                      title: 'My Donations',
-                      color: const Color(0xFF4CAF50),
-                      onTap: () {
-                        // TODO: Navigate to donation history
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Donation History - Coming Soon'),
+
+                    // Profile Button positioned on the right
+                    Positioned(
+                      right: 0,
+                      child: GestureDetector(
+                        onTap: () {
+                          _showProfileMenu(context);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade300),
                           ),
-                        );
-                      },
-                    ),
-                    _buildDashboardCard(
-                      icon: Icons.location_on,
-                      title: 'Pickup Points',
-                      color: const Color(0xFF2196F3),
-                      onTap: () {
-                        // TODO: Navigate to pickup points
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Pickup Points - Coming Soon'),
+                          child: Image.asset(
+                            'assets/images/profile.png',
+                            width: 32,
+                            height: 32,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(
+                                Icons.person,
+                                size: 32,
+                                color: Colors.black87,
+                              );
+                            },
                           ),
-                        );
-                      },
-                    ),
-                    _buildDashboardCard(
-                      icon: Icons.settings,
-                      title: 'Settings',
-                      color: const Color(0xFF9C27B0),
-                      onTap: () {
-                        // TODO: Navigate to settings
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Settings - Coming Soon'),
-                          ),
-                        );
-                      },
+                        ),
+                      ),
                     ),
                   ],
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 24),
+
+                // Feature Cards Grid
+                GridView.count(
+                  crossAxisCount: 2,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.95,
+                  children: [
+                    _buildFeatureCard(
+                      imagePath: 'assets/images/food-donation.png',
+                      label: 'Donate Food',
+                      color: const Color(0xFF20B2AA),
+                    ),
+                    _buildFeatureCard(
+                      imagePath: 'assets/images/listing-tracker.png',
+                      label: 'Listing Tracker',
+                      color: const Color(0xFF48B2A5),
+                    ),
+                    _buildFeatureCard(
+                      imagePath: 'assets/images/listing-history.png',
+                      label: 'Listing History',
+                      color: const Color(0xFF20B2AA),
+                    ),
+                    _buildFeatureCard(
+                      imagePath: 'assets/images/government_schemes.png',
+                      label: 'Recommend Schemes',
+                      color: const Color(0xFF48B2A5),
+                    ),
+                    _buildFeatureCard(
+                      imagePath: 'assets/images/how_it_works.png',
+                      label: 'How it Works',
+                      color: const Color(0xFF20B2AA),
+                    ),
+                    _buildFeatureCard(
+                      imagePath: 'assets/images/impact tracker.png',
+                      label: 'Impact Tracker',
+                      color: const Color(0xFF48B2A5),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 80),
+              ],
+            ),
           ),
+        ),
+      ),
+
+      // Bottom Navigation Bar
+      bottomNavigationBar: CommonFooter(selectedIndex: _selectedIndex),
+    );
+  }
+
+  Widget _buildFeatureCard({
+    IconData? icon,
+    String? imagePath,
+    required String label,
+    required Color color,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        if (label == 'Donate Food') {
+          _showDonateFoodDialog(context);
+        } else if (label == 'Listing Tracker') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ListingTrackerPage()),
+          );
+        } else if (label == 'Listing History') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ListingHistoryPage()),
+          );
+        } else if (label == 'Recommend Schemes') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const RecommendSchemesPage(),
+            ),
+          );
+        } else if (label == 'How it Works') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const HowItWorksPage()),
+          );
+        } else if (label == 'Impact Tracker') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ImpactTrackerPage()),
+          );
+        }
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFFFCEEDD), // Cream background for cards
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.05),
+                shape: BoxShape.circle,
+              ),
+              child: imagePath != null
+                  ? Image.asset(
+                      imagePath,
+                      width: 48,
+                      height: 48,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Icon(
+                          icon ?? Icons.info,
+                          size: 48,
+                          color: Colors.black87,
+                        );
+                      },
+                    )
+                  : Icon(icon ?? Icons.info, size: 48, color: Colors.black87),
+            ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildDashboardCard({
-    required IconData icon,
-    required String title,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(15),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+  void _showDonateFoodDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Text(
+            'Donate Food',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 50, color: color),
-              const SizedBox(height: 15),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black,
+              const Text(
+                'How would you like to donate?',
+                style: TextStyle(fontSize: 14, color: Colors.black54),
+              ),
+              const SizedBox(height: 20),
+
+              // Option 1: Create food listing
+              InkWell(
+                onTap: () {
+                  Navigator.pop(context); // Close dialog
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const CreateListingPage(),
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFCEEDD),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE07A3E)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE07A3E),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.camera_alt,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'Create food listing by clicking picture',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ),
+                      const Icon(
+                        Icons.arrow_forward_ios,
+                        size: 16,
+                        color: Colors.black54,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // Option 2: Donate stale food
+              InkWell(
+                onTap: () {
+                  Navigator.pop(context);
+                  // TODO: Navigate to manure generation page
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Stale food donation feature coming soon!'),
+                      backgroundColor: Color(0xFFE07A3E),
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFCEEDD),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade600,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.eco,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'Donate stale food for manure generation',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ),
+                      const Icon(
+                        Icons.arrow_forward_ios,
+                        size: 16,
+                        color: Colors.black54,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.black54, fontSize: 16),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showProfileMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Image.asset(
+                'assets/images/profile.png',
+                width: 40,
+                height: 40,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(Icons.person, size: 40);
+                },
+              ),
+              title: Text(widget.user.fullName),
+              subtitle: Text(widget.user.email),
+            ),
+            const Divider(),
+            ListTile(
+              leading: Image.asset(
+                'assets/images/logout.png',
+                width: 24,
+                height: 24,
+                color: Colors.red,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(Icons.logout, color: Colors.red);
+                },
+              ),
+              title: const Text('Logout', style: TextStyle(color: Colors.red)),
+              onTap: () async {
+                final authService = AuthService();
+                await authService.logout();
+                if (context.mounted) {
+                  // Pop the bottom sheet first
+                  Navigator.pop(context);
+                  // Then navigate to main, which will show the home page
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(
+                      builder: (context) {
+                        // Import main.dart HomePage
+                        return const HomePage();
+                      },
+                    ),
+                    (route) => false,
+                  );
+                }
+              },
+            ),
+            const SizedBox(height: 20),
+          ],
         ),
       ),
     );

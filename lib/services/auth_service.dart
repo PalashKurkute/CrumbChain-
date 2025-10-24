@@ -143,6 +143,23 @@ class AuthService {
     await _storage.delete(key: _userKey);
   }
 
+  // Get current user from stored data
+  Future<User?> getCurrentUser() async {
+    try {
+      final token = await getToken();
+      final userJson = await _storage.read(key: _userKey);
+
+      if (token != null && userJson != null) {
+        final userData = json.decode(userJson);
+        return User.fromJson(userData);
+      }
+      return null;
+    } catch (e) {
+      print('❌ Error getting current user: $e');
+      return null;
+    }
+  }
+
   // Get user profile from API
   Future<Map<String, dynamic>> getProfile() async {
     try {
