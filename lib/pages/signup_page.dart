@@ -189,13 +189,13 @@ class _SignUpPageState extends State<SignUpPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFFCEFDD),
       body: SafeArea(
-        child: Column(
-          children: [
-            // Top Section - Cream Background with Logo
-            Expanded(
-              flex: 25,
-              child: Container(
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // Top Section - Cream Background with Logo
+              Container(
                 width: double.infinity,
+                height: 150,
                 color: const Color(0xFFFCEFDD),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -206,22 +206,19 @@ class _SignUpPageState extends State<SignUpPage> {
                       height: 100,
                       fit: BoxFit.contain,
                       errorBuilder: (context, error, stackTrace) {
-                        return Icon(
+                        return const Icon(
                           Icons.volunteer_activism,
                           size: 70,
-                          color: const Color(0xFFE07A3E),
+                          color: Color(0xFFE07A3E),
                         );
                       },
                     ),
                   ],
                 ),
               ),
-            ),
 
-            // Bottom Section - White Background with Form
-            Expanded(
-              flex: 75,
-              child: Container(
+              // Bottom Section - White Background with Form
+              Container(
                 width: double.infinity,
                 decoration: const BoxDecoration(
                   color: Colors.white,
@@ -232,9 +229,8 @@ class _SignUpPageState extends State<SignUpPage> {
                 ),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      children: [
+                  child: Column(
+                    children: [
                         const SizedBox(height: 15),
 
                         // Sign Up Text
@@ -652,13 +648,12 @@ class _SignUpPageState extends State<SignUpPage> {
                           ],
                         ),
                         const SizedBox(height: 20),
-                      ],
-                    ),
+                    ],
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

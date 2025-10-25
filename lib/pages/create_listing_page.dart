@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import '../widgets/common_footer.dart';
 import '../models/user.dart';
+import '../services/listing_service.dart';
 
 class CreateListingPage extends StatefulWidget {
   final User? user;
@@ -23,6 +24,7 @@ class CreateListingPage extends StatefulWidget {
 
 class _CreateListingPageState extends State<CreateListingPage> {
   final _formKey = GlobalKey<FormState>();
+  final _listingService = ListingService();
   
   // Controllers
   final _foodTypeController = TextEditingController();
@@ -51,6 +53,9 @@ class _CreateListingPageState extends State<CreateListingPage> {
   
   // Loading state for location
   bool _isLoadingLocation = false;
+  
+  // Loading state for submission
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -995,7 +1000,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: () {
+                        onPressed: _isSubmitting ? null : () async {
                           if (_formKey.currentState!.validate()) {
                             if (_imageFile == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -1027,18 +1032,80 @@ class _CreateListingPageState extends State<CreateListingPage> {
                               return;
                             }
 
-                            // TODO: Submit listing to backend
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  widget.isEditing
-                                      ? 'Listing updated successfully!'
-                                      : 'Listing created successfully!',
-                                ),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                            Navigator.pop(context);
+                            // Set loading state
+                            setState(() {
+                              _isSubmitting = true;
+                            });
+
+                            try {
+                              // Format date and time
+                              String formattedDate = DateFormat('yyyy-MM-dd').format(_datePrepared!);
+                              String formattedTime = '${_pickupTime!.hour.toString().padLeft(2, '0')}:${_pickupTime!.minute.toString().padLeft(2, '0')}';
+                              
+                              // Parse amount if paid donation
+                              double amount = 0;
+                              if (_isPaidDonation && _amountController.text.isNotEmpty) {
+                                amount = double.tryParse(_amountController.text) ?? 0;
+                              }
+
+                              // Submit listing to backend
+                              final result = await _listingService.createListing(
+                                foodType: _foodTypeController.text,
+                                quantity: _quantityController.text,
+                                dietaryTag: _selectedDietaryTag!,
+                                temperatureStatus: _selectedTemperatureStatus!,
+                                location: _locationController.text,
+                                packagingType: _selectedPackagingType!,
+                                description: _descriptionController.text,
+                                datePrepared: formattedDate,
+                                pickupTime: formattedTime,
+                                isPaidDonation: _isPaidDonation,
+                                amount: amount,
+                                imageUrl: _imageFile!.path, // TODO: Upload image to server
+                              );
+
+                              setState(() {
+                                _isSubmitting = false;
+                              });
+
+                              if (result['success']) {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        widget.isEditing
+                                            ? 'Listing updated successfully!'
+                                            : 'Listing created successfully!',
+                                      ),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                  Navigator.pop(context, true); // Return true to indicate success
+                                }
+                              } else {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(result['message'] ?? 'Failed to create listing'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
+                            } catch (e) {
+                              setState(() {
+                                _isSubmitting = false;
+                              });
+                              
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error: ${e.toString()}'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
                           }
                         },
                         style: ElevatedButton.styleFrom(
@@ -1048,16 +1115,25 @@ class _CreateListingPageState extends State<CreateListingPage> {
                           ),
                           elevation: 0,
                         ),
-                        child: Text(
-                          widget.isEditing
-                              ? 'Update Listing'
-                              : 'Create Listing',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
+                        child: _isSubmitting
+                            ? const SizedBox(
+                                height: 24,
+                                width: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(
+                                widget.isEditing
+                                    ? 'Update Listing'
+                                    : 'Create Listing',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
                       ),
                     ),
 

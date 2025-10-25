@@ -27,4 +27,7 @@ class ApiConfig {
   static const String login = '/auth/login';
   static const String profile = '/auth/profile';
   static const String uploadIdProof = '/upload/id-proof';
+  static const String listings = '/listings';
+  static const String createListing = '/listings';
+  static const String getUserListings = '/listings?userOnly=true';
 }
