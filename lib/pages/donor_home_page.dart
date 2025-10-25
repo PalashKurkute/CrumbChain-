@@ -8,7 +8,7 @@ import 'listing_tracker_page.dart';
 import 'listing_history_page.dart';
 import 'recommend_schemes_page.dart';
 import 'impact_tracker_page.dart';
-import 'nearby_page.dart';
+import 'requirements_map_page.dart';
 
 class DonorHomePage extends StatefulWidget {
   final User user;
@@ -54,41 +54,6 @@ class _DonorHomePageState extends State<DonorHomePage> {
                               color: Color(0xFFE07A3E),
                             );
                           },
-                        ),
-                        const SizedBox(height: 8),
-                        // Points Display
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFCEEDD),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: const Color(0xFFE07A3E),
-                              width: 2,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.stars,
-                                color: Color(0xFFE07A3E),
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              const Text(
-                                '142 Points',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFFE07A3E),
-                                ),
-                              ),
-                            ],
-                          ),
                         ),
                       ],
                     ),
@@ -224,7 +189,7 @@ class _DonorHomePageState extends State<DonorHomePage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => NearbyPage(user: widget.user),
+              builder: (context) => const RequirementsMapPage(),
             ),
           );
         }

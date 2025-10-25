@@ -32,6 +32,7 @@ try:
     db = client[DATABASE_NAME]
     users_collection = db['users']
     listings_collection = db['listings']
+    requirements_collection = db['requirements']
     print(f"✅ Connected to MongoDB: {DATABASE_NAME}")
 except Exception as e:
     print(f"❌ MongoDB connection error: {e}")
@@ -579,6 +580,251 @@ def delete_listing(current_user, listing_id):
         return jsonify({
             'success': True,
             'message': 'Listing deleted successfully'
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+# ============= REQUIREMENTS ENDPOINTS =============
+
+@app.route('/api/requirements', methods=['POST'])
+@token_required
+def create_requirement(current_user):
+    """Create a new food requirement"""
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        required_fields = ['organizationName', 'organizationType', 'operatingHours', 'crowdSize']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({
+                    'success': False,
+                    'message': f'Missing required field: {field}'
+                }), 400
+        
+        # Create requirement document
+        requirement_doc = {
+            'userId': str(current_user['_id']),
+            'userEmail': current_user['email'],
+            'organizationName': data['organizationName'],
+            'organizationType': data['organizationType'],
+            'operatingHours': data['operatingHours'],
+            'crowdSize': data['crowdSize'],
+            'foodPreferenceTag': data.get('foodPreferenceTag', ''),
+            'category': data.get('category', ''),
+            'location': data.get('location', ''),
+            'contactPerson': data.get('contactPerson', ''),
+            'contactPhone': data.get('contactPhone', ''),
+            'additionalNotes': data.get('additionalNotes', ''),
+            'status': 'active',  # active, fulfilled, inactive
+            'createdAt': datetime.now(),
+            'updatedAt': datetime.now(),
+            'latitude': data.get('latitude'),
+            'longitude': data.get('longitude'),
+        }
+        
+        # Insert requirement
+        result = requirements_collection.insert_one(requirement_doc)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Requirement created successfully',
+            'data': {
+                'requirementId': str(result.inserted_id)
+            }
+        }), 201
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/requirements', methods=['GET'])
+def get_requirements():
+    """Get all requirements (public endpoint for donors to browse)"""
+    try:
+        # Check if user is authenticated (optional)
+        token = request.headers.get('Authorization')
+        current_user_id = None
+        
+        if token:
+            try:
+                if token.startswith('Bearer '):
+                    token = token[7:]
+                data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+                current_user_id = data['user_id']
+            except:
+                pass  # Token invalid or expired, continue as public access
+        
+        # Query parameters
+        user_only = request.args.get('userOnly', 'false').lower() == 'true'
+        status = request.args.get('status', None)
+        org_type = request.args.get('organizationType', None)
+        
+        # Build query
+        query = {}
+        
+        # If userOnly is requested, authentication is required
+        if user_only:
+            if not current_user_id:
+                return jsonify({
+                    'success': False,
+                    'message': 'Authentication required for user-specific requirements'
+                }), 401
+            query['userId'] = current_user_id
+        
+        if status:
+            query['status'] = status
+        
+        if org_type:
+            query['organizationType'] = org_type
+        
+        # Fetch requirements
+        requirements = list(requirements_collection.find(query).sort('createdAt', -1))
+        
+        # Convert ObjectId to string
+        for requirement in requirements:
+            requirement['_id'] = str(requirement['_id'])
+            if 'createdAt' in requirement:
+                requirement['createdAt'] = requirement['createdAt'].isoformat()
+            if 'updatedAt' in requirement:
+                requirement['updatedAt'] = requirement['updatedAt'].isoformat()
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'requirements': requirements,
+                'count': len(requirements)
+            }
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/requirements/<requirement_id>', methods=['GET'])
+def get_requirement(requirement_id):
+    """Get a specific requirement by ID (public endpoint)"""
+    try:
+        from bson import ObjectId
+        
+        requirement = requirements_collection.find_one({'_id': ObjectId(requirement_id)})
+        
+        if not requirement:
+            return jsonify({
+                'success': False,
+                'message': 'Requirement not found'
+            }), 404
+        
+        # Convert ObjectId to string
+        requirement['_id'] = str(requirement['_id'])
+        if 'createdAt' in requirement:
+            requirement['createdAt'] = requirement['createdAt'].isoformat()
+        if 'updatedAt' in requirement:
+            requirement['updatedAt'] = requirement['updatedAt'].isoformat()
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'requirement': requirement
+            }
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/requirements/<requirement_id>', methods=['PUT'])
+@token_required
+def update_requirement(current_user, requirement_id):
+    """Update a requirement"""
+    try:
+        from bson import ObjectId
+        
+        data = request.get_json()
+        
+        # Check if requirement exists and belongs to user
+        requirement = requirements_collection.find_one({'_id': ObjectId(requirement_id)})
+        
+        if not requirement:
+            return jsonify({
+                'success': False,
+                'message': 'Requirement not found'
+            }), 404
+        
+        if requirement['userId'] != str(current_user['_id']):
+            return jsonify({
+                'success': False,
+                'message': 'Unauthorized to update this requirement'
+            }), 403
+        
+        # Fields that can be updated
+        update_fields = {}
+        updatable_fields = [
+            'organizationName', 'organizationType', 'operatingHours', 'crowdSize',
+            'foodPreferenceTag', 'category', 'location', 'contactPerson',
+            'contactPhone', 'additionalNotes', 'status', 'latitude', 'longitude'
+        ]
+        
+        for field in updatable_fields:
+            if field in data:
+                update_fields[field] = data[field]
+        
+        if update_fields:
+            update_fields['updatedAt'] = datetime.now()
+            requirements_collection.update_one(
+                {'_id': ObjectId(requirement_id)},
+                {'$set': update_fields}
+            )
+        
+        return jsonify({
+            'success': True,
+            'message': 'Requirement updated successfully'
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/requirements/<requirement_id>', methods=['DELETE'])
+@token_required
+def delete_requirement(current_user, requirement_id):
+    """Delete a requirement"""
+    try:
+        from bson import ObjectId
+        
+        # Check if requirement exists and belongs to user
+        requirement = requirements_collection.find_one({'_id': ObjectId(requirement_id)})
+        
+        if not requirement:
+            return jsonify({
+                'success': False,
+                'message': 'Requirement not found'
+            }), 404
+        
+        if requirement['userId'] != str(current_user['_id']):
+            return jsonify({
+                'success': False,
+                'message': 'Unauthorized to delete this requirement'
+            }), 403
+        
+        # Delete requirement
+        requirements_collection.delete_one({'_id': ObjectId(requirement_id)})
+        
+        return jsonify({
+            'success': True,
+            'message': 'Requirement deleted successfully'
         }), 200
         
     except Exception as e:
