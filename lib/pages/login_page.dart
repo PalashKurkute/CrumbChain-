@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'signup_page.dart';
 import '../services/auth_service.dart';
 import '../services/google_signin_service.dart';
 import '../models/user.dart';
+import '../config/api_config.dart';
 import 'donor_home_page.dart';
 import 'receiver_home_page.dart';
 
@@ -74,10 +76,11 @@ class _LoginPageState extends State<LoginPage> {
 
       // Check if it's a configuration error
       String errorMessage = 'Google Sign-In failed';
-      if (e.toString().contains('PlatformException') || 
+      if (e.toString().contains('PlatformException') ||
           e.toString().contains('sign_in_failed') ||
           e.toString().contains('DEVELOPER_ERROR')) {
-        errorMessage = 'Google Sign-In not configured. Please use email/password login.';
+        errorMessage =
+            'Google Sign-In not configured. Please use email/password login.';
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -139,20 +142,157 @@ class _LoginPageState extends State<LoginPage> {
           );
         }
       } else {
+        // Show error message
+        String errorMessage = result['message'] ?? 'Login failed';
+
+        // Check for connection errors
+        if (errorMessage.contains('Connection') ||
+            errorMessage.contains('timeout') ||
+            errorMessage.contains('SocketException')) {
+          errorMessage =
+              'Cannot connect to server.\nPlease check:\n'
+              '• Backend is running\n'
+              '• You are on the same WiFi network\n'
+              '• IP address is correct: 10.9.31.173';
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result['message'] ?? 'Login failed'),
+            content: Text(errorMessage),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'OK',
+              textColor: Colors.white,
+              onPressed: () {},
+            ),
           ),
         );
       }
     } catch (e) {
       if (!mounted) return;
 
+      // Detailed error handling
+      String errorMessage = 'Error: ${e.toString()}';
+
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('Failed host lookup')) {
+        errorMessage =
+            'Network Error!\n\n'
+            'Cannot reach server at 10.9.31.173:5000\n\n'
+            'Checklist:\n'
+            '✓ Backend server is running\n'
+            '✓ Phone and computer on same WiFi\n'
+            '✓ IP address is correct\n'
+            '✓ No firewall blocking connection';
+      } else if (e.toString().contains('timeout')) {
+        errorMessage =
+            'Connection Timeout!\n\n'
+            'Server is not responding.\n'
+            'Please ensure backend is running.';
+      } else if (e.toString().contains('Connection refused')) {
+        errorMessage =
+            'Connection Refused!\n\n'
+            'Backend server is not running on:\n'
+            'http://10.9.31.173:5000\n\n'
+            'Start the server with: python app.py';
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error: ${e.toString()}'),
+          content: Text(errorMessage),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 8),
+          action: SnackBarAction(
+            label: 'CLOSE',
+            textColor: Colors.white,
+            onPressed: () {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            },
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _testConnection() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final testUrl = '${ApiConfig.baseUrl}${ApiConfig.health}';
+      print('🧪 Testing connection to: $testUrl');
+
+      final response = await http
+          .get(Uri.parse(testUrl))
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () {
+              throw Exception('Connection timeout');
+            },
+          );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '✅ Connection successful!\nServer: ${ApiConfig.baseUrl}',
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '⚠️ Server responded with status: ${response.statusCode}',
+            ),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      String errorMessage = '❌ Connection Failed!\n\n';
+
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('Failed host lookup')) {
+        errorMessage +=
+            'Cannot reach server at:\n${ApiConfig.baseUrl}\n\n'
+            'Check:\n'
+            '• Backend running (python app.py)\n'
+            '• Same WiFi network\n'
+            '• IP: 10.9.31.173';
+      } else if (e.toString().contains('timeout')) {
+        errorMessage +=
+            'Server not responding\n\n'
+            'Backend may not be running at:\n${ApiConfig.baseUrl}';
+      } else {
+        errorMessage += e.toString();
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 6),
+          action: SnackBarAction(
+            label: 'OK',
+            textColor: Colors.white,
+            onPressed: () {},
+          ),
         ),
       );
     } finally {
@@ -493,7 +633,26 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 40),
+                        const SizedBox(height: 20),
+
+                        // Test Connection Button (for debugging)
+                        TextButton.icon(
+                          onPressed: _isLoading ? null : _testConnection,
+                          icon: const Icon(
+                            Icons.wifi_find,
+                            size: 18,
+                            color: Colors.grey,
+                          ),
+                          label: const Text(
+                            'Test Server Connection',
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 12,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
                       ],
                     ),
                   ),

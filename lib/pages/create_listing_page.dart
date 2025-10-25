@@ -8,6 +8,7 @@ import 'package:geocoding/geocoding.dart';
 import '../widgets/common_footer.dart';
 import '../models/user.dart';
 import '../services/listing_service.dart';
+import '../services/food_detection_service.dart';
 
 class CreateListingPage extends StatefulWidget {
   final User? user;
@@ -22,6 +23,7 @@ class CreateListingPage extends StatefulWidget {
 class _CreateListingPageState extends State<CreateListingPage> {
   final _formKey = GlobalKey<FormState>();
   final _listingService = ListingService();
+  final _foodDetectionService = FoodDetectionService();
 
   // Controllers
   final _foodTypeController = TextEditingController();
@@ -92,15 +94,158 @@ class _CreateListingPageState extends State<CreateListingPage> {
     }
   }
 
-  void _analyzeImage() {
-    // TODO: Implement AI image analysis with backend
-    // This will analyze the image and populate food type and description
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Analyzing image...'),
-        duration: Duration(seconds: 2),
+  // Get hardcoded expiry days based on recognized food items
+  Map<String, dynamic> _getRecognizedFoodExpiry(String foodName) {
+    final foodLower = foodName.toLowerCase().replaceAll(' ', '_');
+    
+    // Hardcoded expiry days for the 20 recognized food items
+    final expiryMap = {
+      'burger': 2,              // Cooked burger - 2 days
+      'butter_naan': 1,         // Fresh bread - 1 day
+      'chai': 0,                // Tea - consume immediately
+      'chapati': 2,             // Flatbread - 2 days
+      'chole_bhature': 2,       // Cooked chickpeas & bread - 2 days
+      'dal_makhani': 3,         // Cooked lentils - 3 days
+      'dhokla': 2,              // Steamed snack - 2 days
+      'fried_rice': 2,          // Cooked rice - 2 days
+      'idli': 1,                // Steamed rice cakes - 1 day
+      'jalebi': 3,              // Fried sweet - 3 days (high sugar)
+      'kaathi_rolls': 1,        // Wrapped rolls - 1 day
+      'kadai_paneer': 3,        // Cooked paneer curry - 3 days
+      'kulfi': 7,               // Frozen dessert - 7 days
+      'masala_dosa': 1,         // Crispy crepe - 1 day
+      'momos': 2,               // Dumplings - 2 days
+      'paani_puri': 1,          // Street snack - 1 day
+      'pakode': 2,              // Fried fritters - 2 days
+      'pav_bhaji': 2,           // Vegetable curry - 2 days
+      'pizza': 3,               // Pizza - 3 days
+      'samosa': 2,              // Fried pastry - 2 days
+    };
+
+    return {
+      'days': expiryMap[foodLower] ?? 2, // Default 2 days if not found
+      'isRecognized': expiryMap.containsKey(foodLower),
+    };
+  }
+
+  void _analyzeImage() async {
+    if (_imageFile == null) return;
+
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(color: Color(0xFFE07A3E)),
+                SizedBox(height: 16),
+                Text('Analyzing image...', style: TextStyle(fontSize: 16)),
+              ],
+            ),
+          ),
+        ),
       ),
     );
+
+    try {
+      // Call food detection service
+      final result = await _foodDetectionService.detectFood(_imageFile!);
+
+      // Close loading dialog
+      if (mounted) {
+        Navigator.pop(context);
+      }
+
+      if (result['success'] == true) {
+        final detectedFoodName = result['foodName'] ?? '';
+        final confidence = result['confidence'] ?? 0.0;
+        
+        // Get expiry prediction for recognized food
+        final expiryInfo = _getRecognizedFoodExpiry(detectedFoodName);
+        final expiryDays = expiryInfo['days'] as int;
+        final isRecognized = expiryInfo['isRecognized'] as bool;
+        
+        // Auto-fill the food name field and expiry prediction
+        setState(() {
+          _foodTypeController.text = detectedFoodName;
+          if (isRecognized) {
+            _predictedExpiryDays = expiryDays;
+            _predictionConfidence = confidence;
+          }
+        });
+
+        // Show success message with confidence and expiry
+        if (mounted) {
+          final confidencePercent = (confidence * 100).toStringAsFixed(0);
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Food: $detectedFoodName',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          'Confidence: $confidencePercent%',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        if (isRecognized)
+                          Text(
+                            'Predicted expiry: $expiryDays days',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      } else {
+        // Show error message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message'] ?? 'Failed to detect food'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Close loading dialog if still open
+      if (mounted) {
+        Navigator.pop(context);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error analyzing image: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _predictFoodExpiry() async {

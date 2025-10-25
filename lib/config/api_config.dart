@@ -2,7 +2,9 @@ import 'dart:io';
 
 class ApiConfig {
   // IMPORTANT: Set this to true when using emulator, false when using physical device
-  static const bool _useEmulator = false;
+  // If you get 404 errors, try switching this value
+  static const bool _useEmulator =
+      false; // Set to false for physical device via USB
 
   // Automatically detects emulator vs physical device
   // For emulator: uses 10.0.2.2
@@ -10,11 +12,16 @@ class ApiConfig {
   static String get baseUrl {
     if (Platform.isAndroid) {
       const String localIp =
-          '10.105.149.166'; // Your computer's IP on local network (UPDATED)
+          '10.9.31.173'; // Your computer's IP on local network (UPDATED)
       const String emulatorIp = '10.0.2.2'; // Emulator special IP
 
       final ip = _useEmulator ? emulatorIp : localIp;
-      return 'http://$ip:5000/api';
+      final url = 'http://$ip:5000/api';
+      print(
+        '📡 API Config - Using ${_useEmulator ? "Emulator" : "Physical Device"} IP: $ip',
+      );
+      print('📡 Full baseUrl: $url');
+      return url;
     }
 
     // Fallback for other platforms
@@ -30,4 +37,5 @@ class ApiConfig {
   static const String listings = '/listings';
   static const String createListing = '/listings';
   static const String getUserListings = '/listings?userOnly=true';
+  static const String detectFood = '/detect-food';
 }

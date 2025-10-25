@@ -95,13 +95,28 @@ class AuthService {
     } catch (e) {
       print('❌ Signup exception: $e');
       String errorMessage = 'Connection error';
-      if (e.toString().contains('timeout')) {
+
+      if (e.toString().contains('timeout') ||
+          e.toString().contains('TimeoutException')) {
         errorMessage =
-            'Connection timeout - check if backend is running at ${ApiConfig.baseUrl}';
-      } else if (e.toString().contains('SocketException')) {
+            'Connection timeout - Server not responding. Check if backend is running at ${ApiConfig.baseUrl}';
+      } else if (e.toString().contains('SocketException') ||
+          e.toString().contains('Failed host lookup') ||
+          e.toString().contains('Network is unreachable')) {
         errorMessage =
-            'Cannot connect to server. Check your network and backend URL.';
+            'Cannot connect to server at ${ApiConfig.baseUrl}. Check:\n'
+            '• Backend is running (python app.py)\n'
+            '• Same WiFi network\n'
+            '• IP address is correct';
+      } else if (e.toString().contains('Connection refused')) {
+        errorMessage =
+            'Server not running at ${ApiConfig.baseUrl}. Start backend with: python app.py';
+      } else if (e.toString().contains('FormatException')) {
+        errorMessage = 'Invalid response from server. Check backend logs.';
+      } else {
+        errorMessage = 'Connection error: ${e.toString()}';
       }
+
       return {'success': false, 'message': errorMessage};
     }
   }
@@ -183,13 +198,28 @@ class AuthService {
     } catch (e) {
       print('❌ Login exception: $e');
       String errorMessage = 'Connection error';
-      if (e.toString().contains('timeout')) {
+
+      if (e.toString().contains('timeout') ||
+          e.toString().contains('TimeoutException')) {
         errorMessage =
-            'Connection timeout - check if backend is running at ${ApiConfig.baseUrl}';
-      } else if (e.toString().contains('SocketException')) {
+            'Connection timeout - Server not responding. Check if backend is running at ${ApiConfig.baseUrl}';
+      } else if (e.toString().contains('SocketException') ||
+          e.toString().contains('Failed host lookup') ||
+          e.toString().contains('Network is unreachable')) {
         errorMessage =
-            'Cannot connect to server. Check your network and backend URL.';
+            'Cannot connect to server at ${ApiConfig.baseUrl}. Check:\n'
+            '• Backend is running (python app.py)\n'
+            '• Same WiFi network\n'
+            '• IP address is correct';
+      } else if (e.toString().contains('Connection refused')) {
+        errorMessage =
+            'Server not running at ${ApiConfig.baseUrl}. Start backend with: python app.py';
+      } else if (e.toString().contains('FormatException')) {
+        errorMessage = 'Invalid response from server. Check backend logs.';
+      } else {
+        errorMessage = 'Connection error: ${e.toString()}';
       }
+
       return {'success': false, 'message': errorMessage};
     }
   }

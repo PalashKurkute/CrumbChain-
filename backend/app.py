@@ -8,6 +8,9 @@ import jwt
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 from functools import wraps
+from PIL import Image
+import numpy as np
+import io
 
 # Load environment variables
 load_dotenv()
@@ -37,6 +40,54 @@ try:
     print(f"✅ Connected to MongoDB: {DATABASE_NAME}")
 except Exception as e:
     print(f"❌ MongoDB connection error: {e}")
+
+# ============= FOOD DETECTION MODEL LOADING =============
+
+# Global variables for food detection model
+FOOD_MODEL = None
+FOOD_CLASSES = []
+IMG_SIZE = (299, 299)  # InceptionV3 input size
+
+def load_food_detection_model():
+    """Load the trained food detection model (InceptionV3)"""
+    global FOOD_MODEL, FOOD_CLASSES
+    
+    try:
+        import tensorflow as tf
+        from tensorflow import keras
+        
+        model_path = os.path.join(os.path.dirname(__file__), 'models', 'food_model.h5')
+        labels_path = os.path.join(os.path.dirname(__file__), 'models', 'labels.txt')
+        
+        if not os.path.exists(model_path):
+            print(f"⚠️  Food model not found at {model_path}")
+            return
+        
+        if not os.path.exists(labels_path):
+            print(f"⚠️  Labels file not found at {labels_path}")
+            return
+        
+        # Load model
+        print("🔄 Loading food detection model...")
+        FOOD_MODEL = keras.models.load_model(model_path)
+        print("✅ Food detection model loaded successfully!")
+        
+        # Load class labels
+        with open(labels_path, 'r') as f:
+            FOOD_CLASSES = [line.strip() for line in f.readlines() if line.strip()]
+        
+        print(f"✅ Loaded {len(FOOD_CLASSES)} food classes: {', '.join(FOOD_CLASSES[:5])}...")
+        
+    except ImportError:
+        print("⚠️  TensorFlow not installed. Food detection will not be available.")
+        print("   Install with: pip install tensorflow")
+    except Exception as e:
+        print(f"❌ Failed to load food detection model: {e}")
+
+# Load the model when app starts
+load_food_detection_model()
+
+# ============= END FOOD DETECTION MODEL LOADING =============
 
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
@@ -1472,6 +1523,102 @@ def delete_notification(current_user, notification_id):
             'message': f'Failed to delete notification: {str(e)}'
         }), 500
 
+# ============= FOOD DETECTION API =============
+
+@app.route('/api/detect-food', methods=['POST'])
+@token_required
+def detect_food(current_user):
+    """
+    Detect food type from uploaded image using InceptionV3 model
+    """
+    try:
+        # Check if image file is present
+        if 'image' not in request.files:
+            return jsonify({
+                'success': False,
+                'message': 'No image file provided'
+            }), 400
+        
+        image_file = request.files['image']
+        
+        if image_file.filename == '':
+            return jsonify({
+                'success': False,
+                'message': 'No image selected'
+            }), 400
+        
+        # Check if model is loaded
+        if FOOD_MODEL is None:
+            return jsonify({
+                'success': False,
+                'message': 'Food detection model not available. Please ensure TensorFlow is installed.'
+            }), 500
+        
+        # Read and preprocess image
+        print("🔍 Processing image for food detection...")
+        img = Image.open(io.BytesIO(image_file.read()))
+        
+        # Convert to RGB if needed (handle PNG with alpha channel, grayscale, etc.)
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+        
+        # Resize to model input size (299x299 for InceptionV3)
+        img = img.resize(IMG_SIZE)
+        
+        # Convert to array and normalize to 0-1 range
+        img_array = np.array(img, dtype=np.float32) / 255.0
+        
+        # Add batch dimension
+        img_array = np.expand_dims(img_array, axis=0)
+        
+        print(f"📊 Image preprocessed. Shape: {img_array.shape}")
+        
+        # Make prediction
+        print("🤖 Running model prediction...")
+        predictions = FOOD_MODEL.predict(img_array, verbose=0)
+        
+        # Get predicted class and confidence
+        predicted_class_idx = int(np.argmax(predictions[0]))
+        confidence = float(predictions[0][predicted_class_idx])
+        
+        # Get food name from classes
+        if predicted_class_idx < len(FOOD_CLASSES):
+            detected_food = FOOD_CLASSES[predicted_class_idx]
+            # Format food name nicely (replace underscores with spaces, title case)
+            detected_food = detected_food.replace('_', ' ').title()
+        else:
+            detected_food = "Unknown"
+        
+        print(f"✅ Detected: {detected_food} (confidence: {confidence:.2%})")
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'foodName': detected_food,
+                'confidence': round(confidence, 2),
+                'message': 'Food detected successfully'
+            }
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Error in food detection: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': f'Food detection failed: {str(e)}'
+        }), 500
+
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    
+    # Print all registered routes for debugging
+    print("\n" + "="*60)
+    print("📋 REGISTERED ROUTES:")
+    print("="*60)
+    for rule in app.url_map.iter_rules():
+        methods = ','.join(sorted(rule.methods - {'HEAD', 'OPTIONS'}))
+        print(f"{rule.endpoint:30s} {methods:15s} {rule.rule}")
+    print("="*60 + "\n")
+    
+    app.run(host='0.0.0.0', port=port, debug=True, use_reloader=False)
