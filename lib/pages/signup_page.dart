@@ -4,6 +4,7 @@ import '../services/google_signin_service.dart';
 import '../models/user.dart';
 import 'donor_home_page.dart';
 import 'receiver_home_page.dart';
+import 'driver_home_page.dart';
 
 class SignUpPage extends StatefulWidget {
   final String userType; // 'donor' or 'receiver'
@@ -61,6 +62,13 @@ class _SignUpPageState extends State<SignUpPage> {
             context,
             MaterialPageRoute(
               builder: (context) => ReceiverHomePage(user: user),
+            ),
+          );
+        } else if (user.isDriver) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DriverHomePage(user: user),
             ),
           );
         }
@@ -164,6 +172,13 @@ class _SignUpPageState extends State<SignUpPage> {
             context,
             MaterialPageRoute(
               builder: (context) => ReceiverHomePage(user: user),
+            ),
+          );
+        } else if (user.isDriver) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DriverHomePage(user: user),
             ),
           );
         }

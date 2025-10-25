@@ -242,4 +242,91 @@ class OrderService {
         return '📋';
     }
   }
+
+  // ============= DRIVER-SPECIFIC METHODS =============
+
+  // Get available orders for drivers to claim
+  Future<Map<String, dynamic>> getAvailableOrdersForDrivers() async {
+    try {
+      final token = await _storage.read(key: 'auth_token');
+      
+      if (token == null) {
+        return {
+          'success': false,
+          'message': 'Please login to view available orders'
+        };
+      }
+
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/driver/available-orders'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      return json.decode(response.body);
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Failed to fetch available orders: $e'
+      };
+    }
+  }
+
+  // Driver claims a delivery
+  Future<Map<String, dynamic>> claimDelivery(String orderId) async {
+    try {
+      final token = await _storage.read(key: 'auth_token');
+      
+      if (token == null) {
+        return {
+          'success': false,
+          'message': 'Please login to claim deliveries'
+        };
+      }
+
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/driver/claim-delivery/$orderId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      return json.decode(response.body);
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Failed to claim delivery: $e'
+      };
+    }
+  }
+
+  // Get driver's deliveries (order history for drivers)
+  Future<Map<String, dynamic>> getDriverDeliveries() async {
+    try {
+      final token = await _storage.read(key: 'auth_token');
+      
+      if (token == null) {
+        return {
+          'success': false,
+          'message': 'Please login to view deliveries'
+        };
+      }
+
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/driver/my-deliveries'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      return json.decode(response.body);
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Failed to fetch deliveries: $e'
+      };
+    }
+  }
 }

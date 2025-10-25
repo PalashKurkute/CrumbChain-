@@ -27,6 +27,13 @@ class Listing {
   final double? donorRating;
   final int? donorTotalRatings;
 
+  // Claim information (when order is claimed)
+  final String? claimedBy;
+  final String? claimedByEmail;
+  final String? claimedByName;
+  final DateTime? claimedAt;
+  final String? orderStatus; // pending_approval, approved, in_transit, out_for_delivery, delivered, completed
+
   Listing({
     required this.id,
     required this.userId,
@@ -51,6 +58,11 @@ class Listing {
     this.longitude,
     this.donorRating,
     this.donorTotalRatings,
+    this.claimedBy,
+    this.claimedByEmail,
+    this.claimedByName,
+    this.claimedAt,
+    this.orderStatus,
   });
 
   factory Listing.fromJson(Map<String, dynamic> json) {
@@ -82,6 +94,13 @@ class Listing {
       longitude: json['longitude'] as double?,
       donorRating: (json['donorRating'] as num?)?.toDouble(),
       donorTotalRatings: json['donorTotalRatings'] as int?,
+      claimedBy: json['claimedBy'] as String?,
+      claimedByEmail: json['claimedByEmail'] as String?,
+      claimedByName: json['claimedByName'] as String?,
+      claimedAt: json['claimedAt'] is String
+          ? DateTime.parse(json['claimedAt'])
+          : null,
+      orderStatus: json['orderStatus'] as String?,
     );
   }
 

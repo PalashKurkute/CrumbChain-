@@ -7,6 +7,7 @@ import '../models/user.dart';
 import '../config/api_config.dart';
 import 'donor_home_page.dart';
 import 'receiver_home_page.dart';
+import 'driver_home_page.dart';
 
 class LoginPage extends StatefulWidget {
   final String userType; // 'donor' or 'receiver'
@@ -58,6 +59,13 @@ class _LoginPageState extends State<LoginPage> {
             context,
             MaterialPageRoute(
               builder: (context) => ReceiverHomePage(user: user),
+            ),
+          );
+        } else if (user.isDriver) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DriverHomePage(user: user),
             ),
           );
         }
@@ -138,6 +146,13 @@ class _LoginPageState extends State<LoginPage> {
             context,
             MaterialPageRoute(
               builder: (context) => ReceiverHomePage(user: user),
+            ),
+          );
+        } else if (user.isDriver) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DriverHomePage(user: user),
             ),
           );
         }

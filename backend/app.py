@@ -346,10 +346,10 @@ def signup():
             }), 409
         
         # Validate user type
-        if data['userType'].lower() not in ['donor', 'receiver']:
+        if data['userType'].lower() not in ['donor', 'receiver', 'driver']:
             return jsonify({
                 'success': False,
-                'message': 'Invalid user type. Must be donor or receiver'
+                'message': 'Invalid user type. Must be donor, receiver, or driver'
             }), 400
         
         # Hash password
@@ -1400,6 +1400,207 @@ def get_active_orders(current_user):
             'success': False,
             'message': str(e)
         }), 500
+
+# ============= DRIVER ENDPOINTS =============
+
+@app.route('/api/driver/available-orders', methods=['GET'])
+@token_required
+def get_available_orders_for_drivers(current_user):
+    """Get all approved orders available for drivers to claim for delivery"""
+    try:
+        # Check if user is a driver
+        if current_user.get('userType', '').lower() != 'driver':
+            return jsonify({
+                'success': False,
+                'message': 'Only drivers can access this endpoint'
+            }), 403
+        
+        # Get all approved orders that don't have a driver assigned yet
+        available_orders = list(listings_collection.find({
+            'orderStatus': 'approved',
+            'claimedBy': {'$exists': True},  # Must be claimed by a receiver
+            '$or': [
+                {'driverId': {'$exists': False}},  # No driver assigned yet
+                {'driverId': None}  # Driver field is null
+            ]
+        }).sort('approvedAt', -1))
+        
+        # Convert ObjectId to string and format dates
+        for order in available_orders:
+            order['_id'] = str(order['_id'])
+            if 'createdAt' in order:
+                order['createdAt'] = order['createdAt'].isoformat()
+            if 'updatedAt' in order:
+                order['updatedAt'] = order['updatedAt'].isoformat()
+            if 'claimedAt' in order:
+                order['claimedAt'] = order['claimedAt'].isoformat()
+            if 'approvedAt' in order:
+                order['approvedAt'] = order['approvedAt'].isoformat()
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'orders': available_orders,
+                'count': len(available_orders)
+            }
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/driver/claim-delivery/<order_id>', methods=['POST'])
+@token_required
+def claim_delivery(current_user, order_id):
+    """Driver claims an approved order for delivery"""
+    try:
+        from bson import ObjectId
+        
+        # Check if user is a driver
+        if current_user.get('userType', '').lower() != 'driver':
+            return jsonify({
+                'success': False,
+                'message': 'Only drivers can claim deliveries'
+            }), 403
+        
+        driver_id = str(current_user['_id'])
+        
+        # Check if order exists and is approved
+        order = listings_collection.find_one({'_id': ObjectId(order_id)})
+        
+        if not order:
+            return jsonify({
+                'success': False,
+                'message': 'Order not found'
+            }), 404
+        
+        if order.get('orderStatus') != 'approved':
+            return jsonify({
+                'success': False,
+                'message': f'Order must be approved to claim. Current status: {order.get("orderStatus")}'
+            }), 400
+        
+        if order.get('driverId'):
+            return jsonify({
+                'success': False,
+                'message': 'This order has already been claimed by another driver'
+            }), 400
+        
+        # Assign driver to order and update status to in_transit
+        listings_collection.update_one(
+            {'_id': ObjectId(order_id)},
+            {
+                '$set': {
+                    'driverId': driver_id,
+                    'driverEmail': current_user['email'],
+                    'driverName': current_user.get('name', current_user.get('full_name', '')),
+                    'driverClaimedAt': datetime.now(),
+                    'orderStatus': 'in_transit',
+                    'inTransitAt': datetime.now(),
+                    'updatedAt': datetime.now()
+                }
+            }
+        )
+        
+        # Create notifications for donor and receiver
+        donor = users_collection.find_one({'_id': ObjectId(order['userId'])})
+        receiver = users_collection.find_one({'_id': ObjectId(order.get('claimedBy'))})
+        
+        driver_name = current_user.get('name', current_user.get('full_name', 'A driver'))
+        
+        if donor:
+            create_notification(
+                order['userId'],
+                'order_status',
+                '🚗 Driver Assigned',
+                f'{driver_name} has picked up your donation and is on the way to deliver it!',
+                listingId=order_id,
+                orderStatus='in_transit',
+                relatedUserId=driver_id,
+                relatedUserName=driver_name
+            )
+        
+        if receiver:
+            create_notification(
+                order.get('claimedBy'),
+                'order_status',
+                '🚗 Order is on the Way!',
+                f'{driver_name} has picked up your order and is delivering it now!',
+                listingId=order_id,
+                orderStatus='in_transit',
+                relatedUserId=driver_id,
+                relatedUserName=driver_name
+            )
+        
+        return jsonify({
+            'success': True,
+            'message': 'Delivery claimed successfully',
+            'data': {
+                'orderId': order_id,
+                'orderStatus': 'in_transit'
+            }
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/driver/my-deliveries', methods=['GET'])
+@token_required
+def get_driver_deliveries(current_user):
+    """Get all deliveries assigned to the current driver"""
+    try:
+        # Check if user is a driver
+        if current_user.get('userType', '').lower() != 'driver':
+            return jsonify({
+                'success': False,
+                'message': 'Only drivers can access this endpoint'
+            }), 403
+        
+        driver_id = str(current_user['_id'])
+        
+        # Get all orders assigned to this driver
+        deliveries = list(listings_collection.find({
+            'driverId': driver_id
+        }).sort('driverClaimedAt', -1))
+        
+        # Convert ObjectId to string and format dates
+        for delivery in deliveries:
+            delivery['_id'] = str(delivery['_id'])
+            if 'createdAt' in delivery:
+                delivery['createdAt'] = delivery['createdAt'].isoformat()
+            if 'updatedAt' in delivery:
+                delivery['updatedAt'] = delivery['updatedAt'].isoformat()
+            if 'claimedAt' in delivery:
+                delivery['claimedAt'] = delivery['claimedAt'].isoformat()
+            if 'approvedAt' in delivery:
+                delivery['approvedAt'] = delivery['approvedAt'].isoformat()
+            if 'driverClaimedAt' in delivery:
+                delivery['driverClaimedAt'] = delivery['driverClaimedAt'].isoformat()
+            if 'inTransitAt' in delivery:
+                delivery['inTransitAt'] = delivery['inTransitAt'].isoformat()
+            if 'deliveredAt' in delivery:
+                delivery['deliveredAt'] = delivery['deliveredAt'].isoformat()
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'deliveries': deliveries,
+                'count': len(deliveries)
+            }
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+# ============= END DRIVER ENDPOINTS =============
 
 @app.route('/api/orders/<order_id>', methods=['DELETE'])
 @token_required

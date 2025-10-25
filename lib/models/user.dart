@@ -47,4 +47,5 @@ class User {
 
   bool get isDonor => userType.toLowerCase() == 'donor';
   bool get isReceiver => userType.toLowerCase() == 'receiver';
+  bool get isDriver => userType.toLowerCase() == 'driver';
 }

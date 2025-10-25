@@ -5,6 +5,7 @@ import 'pages/login_page.dart';
 import 'services/auth_service.dart';
 import 'pages/donor_home_page.dart';
 import 'pages/receiver_home_page.dart';
+import 'pages/driver_home_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -76,6 +77,10 @@ class _SplashScreenState extends State<SplashScreen> {
       } else if (user.isReceiver) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => ReceiverHomePage(user: user)),
+        );
+      } else if (user.isDriver) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => DriverHomePage(user: user)),
         );
       } else {
         // Unknown user type, go to home page
@@ -248,6 +253,39 @@ class HomePage extends StatelessWidget {
                         ),
                         child: const Text(
                           'Receiver',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Driver Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const LoginPage(userType: 'driver'),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          elevation: 3,
+                        ),
+                        child: const Text(
+                          'Driver',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
