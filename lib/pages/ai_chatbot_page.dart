@@ -23,15 +23,11 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
 
   // Model priority list - tries in order until one works
   final List<String> _modelPriority = [
-    'gemini-1.5-flash', // ⚡ Fastest, lowest cost
-    'gemini-1.5-flash-latest', // Alternative naming
-    'gemini-pro', // Stable fallback
-    'gemini-1.5-flash-8b', // 🚀 Ultra-fast, very low cost
-    'gemini-1.5-pro', // 🧠 Complex reasoning
-    'gemini-1.5-pro-latest', // Alternative naming
-    'gemini-1.0-pro', // 📊 Stable, general-purpose
-    'models/gemini-1.5-flash', // With models/ prefix
-    'models/gemini-pro', // With models/ prefix
+    'gemini-2.5-pro', // 🧠 Highest priority - Best reasoning
+    'gemini-2.5-flash', // ⚡ Fast and efficient
+    'gemini-2.5-flash-lite', // 🚀 Lightweight and fast
+    'gemini-1.5-flash', // Fallback to 1.5 Flash
+    'gemini-1.5-pro', // Fallback to 1.5 Pro
   ];
 
   @override
@@ -78,7 +74,7 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
           temperature: 0.7,
           topK: 40,
           topP: 0.95,
-          maxOutputTokens: 8192,
+          maxOutputTokens: 512, // Reduced for concise responses
         ),
       );
       _currentModel = _modelPriority[0];
@@ -95,10 +91,10 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
         ChatMessage(
           text:
               'Hello! I\'m your CrumbChain AI assistant powered by Gemini. I can help you with:\n\n'
-              '• Information about food donation\n'
-              '• Tips for reducing food waste\n'
-              '• Questions about our platform\n'
-              '• Government schemes and programs\n\n'
+              '- Information about food donation\n'
+              '- Tips for reducing food waste\n'
+              '- Questions about our platform\n'
+              '- Government schemes and programs\n\n'
               'How can I assist you today?',
           isUser: false,
           timestamp: DateTime.now(),
@@ -139,6 +135,12 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
   Future<void> _sendWithFallback(String userMessage) async {
     final apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
 
+    // Add instruction prefix to get plain text responses
+    final instructedMessage =
+        'Please respond in plain text without any markdown symbols (no *, _, #, etc.). '
+        'Keep your response concise and brief, maximum 3-4 sentences. '
+        'User question: $userMessage';
+
     for (int i = 0; i < _modelPriority.length; i++) {
       try {
         // If not the first attempt, reinitialize with next model
@@ -150,20 +152,29 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
               temperature: 0.7,
               topK: 40,
               topP: 0.95,
-              maxOutputTokens: i < 3 ? 8192 : 2048, // Adjust based on model
+              maxOutputTokens: 512, // Reduced for concise responses
             ),
           );
           _currentModel = _modelPriority[i];
           print('Trying model: $_currentModel');
         }
 
-        final content = [Content.text(userMessage)];
+        final content = [Content.text(instructedMessage)];
         final response = await _model!.generateContent(content);
+
+        // Clean up any remaining markdown symbols from the response
+        String cleanedText =
+            response.text ?? 'Sorry, I couldn\'t generate a response.';
+        cleanedText = cleanedText.replaceAll(RegExp(r'\*+'), '');
+        cleanedText = cleanedText.replaceAll(RegExp(r'_+'), '');
+        cleanedText = cleanedText.replaceAll(RegExp(r'#+'), '');
+        cleanedText = cleanedText.replaceAll(RegExp(r'`+'), '');
+        cleanedText = cleanedText.trim();
 
         setState(() {
           _messages.add(
             ChatMessage(
-              text: response.text ?? 'Sorry, I couldn\'t generate a response.',
+              text: cleanedText,
               isUser: false,
               timestamp: DateTime.now(),
             ),

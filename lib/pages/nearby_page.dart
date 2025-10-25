@@ -26,9 +26,16 @@ class _NearbyPageState extends State<NearbyPage> {
   // Sample markers for hotels, NGOs, and food banks
   final List<Marker> _markers = [];
 
+  // List of locations for the side panel
+  final List<LocationData> _locations = [];
+
+  // Selected location
+  LocationData? _selectedLocation;
+
   @override
   void initState() {
     super.initState();
+    _initializeLocations();
     _initializeMarkers();
     // Check permission status first
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -311,167 +318,481 @@ class _NearbyPageState extends State<NearbyPage> {
     );
   }
 
-  void _initializeMarkers() {
-    // Sample markers - Replace with actual data from your backend
-    _markers.addAll([
-      // NGOs
-      Marker(
-        point: const LatLng(19.0896, 72.8656),
-        width: 80,
-        height: 80,
-        child: GestureDetector(
-          onTap: () => _showMarkerDetails(
-            'NGO - Feeding India',
-            'Active food distribution center',
-            'NGO',
-          ),
-          child: const Column(
-            children: [
-              Icon(Icons.volunteer_activism, color: Colors.green, size: 40),
-              Text(
-                'NGO',
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-        ),
+  void _initializeLocations() {
+    _locations.addAll([
+      LocationData(
+        id: 'org_001',
+        name: 'Feeding India',
+        description: 'Active food distribution center serving 500+ meals daily',
+        type: 'NGO',
+        position: const LatLng(19.0896, 72.8656),
+        icon: Icons.volunteer_activism,
+        color: Colors.green,
+        address: 'Andheri West, Mumbai',
+        timing: '9 AM - 8 PM',
+        availableFood: ['Rice', 'Dal', 'Vegetables', 'Roti', 'Fruits'],
+        contact: '+91 98765 43210',
       ),
-      // Hotels
-      Marker(
-        point: const LatLng(19.0760, 72.8777),
-        width: 80,
-        height: 80,
-        child: GestureDetector(
-          onTap: () => _showMarkerDetails(
-            'Taj Hotel',
-            'Donates excess food daily',
-            'Hotel',
-          ),
-          child: const Column(
-            children: [
-              Icon(Icons.hotel, color: Colors.orange, size: 40),
-              Text(
-                'Hotel',
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-        ),
+      LocationData(
+        id: 'org_002',
+        name: 'Taj Hotel',
+        description: 'Donates excess food daily to nearby shelters',
+        type: 'Hotel',
+        position: const LatLng(19.0760, 72.8777),
+        icon: Icons.hotel,
+        color: Colors.orange,
+        address: 'Colaba, Mumbai',
+        timing: 'Daily pickups at 10 PM',
+        availableFood: ['Cooked Meals', 'Desserts', 'Bread', 'Pastries'],
+        contact: '+91 98765 43211',
       ),
-      // Food Banks
-      Marker(
-        point: const LatLng(19.0650, 72.8750),
-        width: 80,
-        height: 80,
-        child: GestureDetector(
-          onTap: () => _showMarkerDetails(
-            'Community Food Bank',
-            'Open 9 AM - 6 PM',
-            'Food Bank',
-          ),
-          child: const Column(
-            children: [
-              Icon(Icons.food_bank, color: Colors.red, size: 40),
-              Text(
-                'Food Bank',
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-        ),
+      LocationData(
+        id: 'org_003',
+        name: 'Community Food Bank',
+        description: 'Collects and distributes food to families in need',
+        type: 'Food Bank',
+        position: const LatLng(19.0650, 72.8750),
+        icon: Icons.food_bank,
+        color: Colors.red,
+        address: 'Worli, Mumbai',
+        timing: '9 AM - 6 PM',
+        availableFood: ['Canned Food', 'Dry Grains', 'Packaged Items'],
+        contact: '+91 98765 43212',
       ),
-      // More NGOs
-      Marker(
-        point: const LatLng(19.0850, 72.8900),
-        width: 80,
-        height: 80,
-        child: GestureDetector(
-          onTap: () => _showMarkerDetails(
-            'Akshaya Patra Foundation',
-            'Large-scale food distribution',
-            'NGO',
-          ),
-          child: const Column(
-            children: [
-              Icon(Icons.volunteer_activism, color: Colors.green, size: 40),
-              Text(
-                'NGO',
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-        ),
+      LocationData(
+        id: 'org_004',
+        name: 'Akshaya Patra Foundation',
+        description: 'Large-scale food distribution across Mumbai',
+        type: 'NGO',
+        position: const LatLng(19.0850, 72.8900),
+        icon: Icons.volunteer_activism,
+        color: Colors.green,
+        address: 'Powai, Mumbai',
+        timing: '8 AM - 7 PM',
+        availableFood: ['Rice', 'Dal', 'Curry', 'Chapati', 'Pickles'],
+        contact: '+91 98765 43213',
+      ),
+      LocationData(
+        id: 'org_005',
+        name: 'ITC Grand Central',
+        description: 'Hotel chain donating surplus food',
+        type: 'Hotel',
+        position: const LatLng(19.0820, 72.8700),
+        icon: Icons.hotel,
+        color: Colors.orange,
+        address: 'Parel, Mumbai',
+        timing: 'Evening pickups',
+        availableFood: ['Buffet Items', 'Fresh Salads', 'Beverages'],
+        contact: '+91 98765 43214',
+      ),
+      LocationData(
+        id: 'org_006',
+        name: 'Robin Hood Army',
+        description: 'Volunteer-based food redistribution network',
+        type: 'NGO',
+        position: const LatLng(19.0700, 72.8650),
+        icon: Icons.volunteer_activism,
+        color: Colors.green,
+        address: 'Bandra West, Mumbai',
+        timing: '7 PM - 11 PM',
+        availableFood: ['Mixed Meals', 'Snacks', 'Fruits', 'Packaged Food'],
+        contact: '+91 98765 43215',
       ),
     ]);
   }
 
-  void _showMarkerDetails(String name, String description, String type) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+  void _initializeMarkers() {
+    // Create markers from the locations list
+    for (var location in _locations) {
+      _markers.add(
+        Marker(
+          point: location.position,
+          width: 100,
+          height: 100,
+          child: GestureDetector(
+            onTap: () {
+              _showOrganizationDetails(location);
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  type == 'NGO'
-                      ? Icons.volunteer_activism
-                      : type == 'Hotel'
-                      ? Icons.hotel
-                      : Icons.food_bank,
-                  color: type == 'NGO'
-                      ? Colors.green
-                      : type == 'Hotel'
-                      ? Colors.orange
-                      : Colors.red,
-                  size: 30,
+                // Custom marker with shadow
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: location.color, width: 3),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 6,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Icon(location.icon, color: location.color, size: 28),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
+                const SizedBox(height: 4),
+                // Organization name tag
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: location.color,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
                   child: Text(
-                    name,
+                    location.name.split(' ').first, // First word of name
                     style: const TextStyle(
-                      fontSize: 20,
+                      fontSize: 10,
                       fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            Text(
-              'Type: $type',
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
+          ),
+        ),
+      );
+    }
+  }
+
+  void _showOrganizationDetails(LocationData location) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.9,
+        builder: (context, scrollController) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
             ),
-            const SizedBox(height: 10),
-            Text(description, style: const TextStyle(fontSize: 16)),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  // TODO: Implement contact or navigation functionality
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Contacting $name...')),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE07A3E),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              // Content
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.all(20),
+                  children: [
+                    // Header with icon and name
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: location.color.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Icon(
+                            location.icon,
+                            color: location.color,
+                            size: 40,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                location.name,
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: location.color.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  location.type,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: location.color,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    // Description
+                    Text(
+                      location.description,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Colors.grey.shade700,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    // Info cards
+                    _buildInfoCard(
+                      Icons.location_on,
+                      'Location',
+                      location.address,
+                      Colors.blue,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildInfoCard(
+                      Icons.access_time,
+                      'Operating Hours',
+                      location.timing,
+                      Colors.orange,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildInfoCard(
+                      Icons.phone,
+                      'Contact',
+                      location.contact,
+                      Colors.green,
+                    ),
+                    const SizedBox(height: 24),
+                    // Action buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              _moveToLocation(location);
+                            },
+                            icon: const Icon(Icons.map, size: 20),
+                            label: const Text('View on Map'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey.shade200,
+                              foregroundColor: Colors.black87,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              // TODO: Navigate to organization's listing page
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Viewing ${location.name}\'s listings...',
+                                  ),
+                                  backgroundColor: const Color(0xFFE07A3E),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.list_alt, size: 20),
+                            label: const Text('View Listings'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFE07A3E),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(
+    IconData icon,
+    String title,
+    String value,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-                child: const Text('Contact', style: TextStyle(fontSize: 16)),
-              ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _moveToLocation(LocationData location) {
+    _mapController.move(location.position, 16.0);
+  }
+
+  Widget _buildLocationCard(LocationData location, bool isSelected) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedLocation = location;
+        });
+        _moveToLocation(location);
+      },
+      child: Container(
+        width: 220,
+        margin: const EdgeInsets.only(right: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? const Color(0xFFE07A3E).withOpacity(0.1)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? const Color(0xFFE07A3E) : Colors.grey.shade300,
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: location.color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(location.icon, color: location.color, size: 20),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        location.name,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: location.color.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          location.type,
+                          style: TextStyle(
+                            fontSize: 9,
+                            color: location.color,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.location_on, size: 12, color: Colors.grey),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    location.address,
+                    style: const TextStyle(fontSize: 10, color: Colors.grey),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -503,39 +824,13 @@ class _NearbyPageState extends State<NearbyPage> {
         body: SafeArea(
           child: Column(
             children: [
-              // Header with logo
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    Image.asset(
-                      'assets/images/logo.png',
-                      width: 50,
-                      height: 50,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Icon(Icons.restaurant, size: 50);
-                      },
-                    ),
-                    const SizedBox(width: 12),
-                    const Text(
-                      'Nearby',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
               // Permission request content
               Expanded(
-                child: Center(
+                child: SingleChildScrollView(
                   child: Padding(
                     padding: const EdgeInsets.all(32.0),
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         // Location icon
                         Container(
@@ -685,32 +980,6 @@ class _NearbyPageState extends State<NearbyPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header with logo
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  Image.asset(
-                    'assets/images/logo.png',
-                    width: 50,
-                    height: 50,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Icon(Icons.restaurant, size: 50);
-                    },
-                  ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'Nearby',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
             // Cream background section with icon and description
             Container(
               width: double.infinity,
@@ -728,7 +997,7 @@ class _NearbyPageState extends State<NearbyPage> {
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    'Find Nearby Donors & Recipients',
+                    'Find Nearby Receivers',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -863,8 +1132,8 @@ class _NearbyPageState extends State<NearbyPage> {
 
                   // Recenter button
                   Positioned(
-                    bottom: 20,
-                    right: 20,
+                    top: 10,
+                    right: 10,
                     child: FloatingActionButton(
                       onPressed: _recenterMap,
                       backgroundColor: const Color(0xFFE07A3E),
@@ -969,6 +1238,81 @@ class _NearbyPageState extends State<NearbyPage> {
                       ),
                     ),
                   ),
+
+                  // Side panel with location list
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 10,
+                    height: 200,
+                    child: Center(
+                      child: Container(
+                        width: MediaQuery.of(context).size.width - 40,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.15),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            // Header
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE07A3E),
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(16),
+                                  topRight: Radius.circular(16),
+                                ),
+                              ),
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.location_on,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Nearby Locations',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Location list
+                            Expanded(
+                              child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                padding: const EdgeInsets.all(12),
+                                itemCount: _locations.length,
+                                itemBuilder: (context, index) {
+                                  final location = _locations[index];
+                                  final isSelected =
+                                      _selectedLocation == location;
+                                  return _buildLocationCard(
+                                    location,
+                                    isSelected,
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -978,4 +1322,33 @@ class _NearbyPageState extends State<NearbyPage> {
       bottomNavigationBar: CommonFooter(user: widget.user),
     );
   }
+}
+
+// Location data model
+class LocationData {
+  final String id; // Organization ID
+  final String name;
+  final String description;
+  final String type; // 'NGO', 'Hotel', 'Food Bank'
+  final LatLng position;
+  final IconData icon;
+  final Color color;
+  final String address;
+  final String timing;
+  final List<String> availableFood; // Types of food available
+  final String contact; // Contact information
+
+  LocationData({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.type,
+    required this.position,
+    required this.icon,
+    required this.color,
+    required this.address,
+    required this.timing,
+    required this.availableFood,
+    required this.contact,
+  });
 }
