@@ -4,6 +4,7 @@ import '../services/auth_service.dart';
 import '../main.dart';
 import '../widgets/common_footer.dart';
 import 'create_listing_page.dart';
+import 'donate_stale_food_page.dart';
 import 'listing_tracker_page.dart';
 import 'listing_history_page.dart';
 import 'recommend_schemes_page.dart';
@@ -384,11 +385,12 @@ class _DonorHomePageState extends State<DonorHomePage> {
               InkWell(
                 onTap: () {
                   Navigator.pop(context);
-                  // TODO: Navigate to manure generation page
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Stale food donation feature coming soon!'),
-                      backgroundColor: Color(0xFFE07A3E),
+                  // Navigate to stale food donation page
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          DonateStaleFoodPage(user: widget.user),
                     ),
                   );
                 },
