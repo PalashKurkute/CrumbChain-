@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import '../widgets/common_footer.dart';
+import '../models/user.dart';
+import 'create_listing_page.dart';
 
 class ListingTrackerPage extends StatefulWidget {
-  const ListingTrackerPage({super.key});
+  final User? user;
+
+  const ListingTrackerPage({super.key, this.user});
 
   @override
   State<ListingTrackerPage> createState() => _ListingTrackerPageState();
@@ -105,9 +109,13 @@ class _ListingTrackerPageState extends State<ListingTrackerPage> {
                 children: [
                   _buildListingCard(
                     title: 'Cooked Rice and Curry',
+                    foodType: 'Cooked Food',
+                    quantity: '10 plates',
+                    location: 'Andheri West, Mumbai',
+                    description:
+                        'Fresh cooked rice with curry, ready for pickup',
                     status: 'In Transit',
                     statusColor: Colors.orange,
-                    location: 'Andheri West, Mumbai',
                     time: '2 hours ago',
                   ),
 
@@ -115,9 +123,13 @@ class _ListingTrackerPageState extends State<ListingTrackerPage> {
 
                   _buildListingCard(
                     title: 'Fresh Vegetables',
+                    foodType: 'Raw Food',
+                    quantity: '5 kg',
+                    location: 'Bandra East, Mumbai',
+                    description:
+                        'Assorted fresh vegetables including tomatoes, onions, and greens',
                     status: 'Delivered',
                     statusColor: Colors.green,
-                    location: 'Bandra East, Mumbai',
                     time: '1 day ago',
                   ),
 
@@ -125,9 +137,12 @@ class _ListingTrackerPageState extends State<ListingTrackerPage> {
 
                   _buildListingCard(
                     title: 'Packaged Snacks',
+                    foodType: 'Packaged Food',
+                    quantity: '20 packets',
+                    location: 'Powai, Mumbai',
+                    description: 'Sealed packaged snacks with long shelf life',
                     status: 'Pending Pickup',
                     statusColor: Colors.blue,
-                    location: 'Powai, Mumbai',
                     time: '3 hours ago',
                   ),
                 ],
@@ -136,16 +151,20 @@ class _ListingTrackerPageState extends State<ListingTrackerPage> {
           ],
         ),
       ),
-      bottomNavigationBar: const CommonFooter(),
+      bottomNavigationBar: CommonFooter(user: widget.user),
     );
   }
 
   Widget _buildListingCard({
     required String title,
+    required String foodType,
+    required String quantity,
+    required String location,
+    required String description,
     required String status,
     required Color statusColor,
-    required String location,
     required String time,
+    String? imagePath,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -168,26 +187,68 @@ class _ListingTrackerPageState extends State<ListingTrackerPage> {
                     fontWeight: FontWeight.w600,
                     color: Colors.black87,
                   ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: statusColor),
-                ),
-                child: Text(
-                  status,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: statusColor,
+              const SizedBox(width: 8),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Edit button (Pencil icon)
+                  InkWell(
+                    onTap: () {
+                      // Navigate to edit page with pre-filled data
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CreateListingPage(
+                            user: widget.user,
+                            isEditing: true,
+                            existingFoodName: title,
+                            existingFoodType: foodType,
+                            existingQuantity: quantity,
+                            existingLocation: location,
+                            existingDescription: description,
+                            existingImagePath: imagePath,
+                          ),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: const Icon(
+                        Icons.edit,
+                        size: 18,
+                        color: Color(0xFFE07A3E),
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: statusColor),
+                    ),
+                    child: Text(
+                      status,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: statusColor,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -196,9 +257,12 @@ class _ListingTrackerPageState extends State<ListingTrackerPage> {
             children: [
               Icon(Icons.location_on, size: 16, color: Colors.grey.shade600),
               const SizedBox(width: 4),
-              Text(
-                location,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              Expanded(
+                child: Text(
+                  location,
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
@@ -207,9 +271,12 @@ class _ListingTrackerPageState extends State<ListingTrackerPage> {
             children: [
               Icon(Icons.access_time, size: 16, color: Colors.grey.shade600),
               const SizedBox(width: 4),
-              Text(
-                time,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              Expanded(
+                child: Text(
+                  time,
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),

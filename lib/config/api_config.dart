@@ -1,8 +1,25 @@
+import 'dart:io';
+
 class ApiConfig {
-  // Change this to your computer's IP address when testing on physical device
-  // For emulator: use 10.0.2.2
-  // For physical device: use your computer's local IP (e.g., 192.168.1.100)
-  static const String baseUrl = 'http://10.0.2.2:5000/api';
+  // IMPORTANT: Set this to true when using emulator, false when using physical device
+  static const bool _useEmulator = false;
+
+  // Automatically detects emulator vs physical device
+  // For emulator: uses 10.0.2.2
+  // For physical device: uses your computer's local IP
+  static String get baseUrl {
+    if (Platform.isAndroid) {
+      const String localIp =
+          '10.9.31.173'; // Your computer's IP on local network
+      const String emulatorIp = '10.0.2.2'; // Emulator special IP
+
+      final ip = _useEmulator ? emulatorIp : localIp;
+      return 'http://$ip:5000/api';
+    }
+
+    // Fallback for other platforms
+    return 'http://10.9.31.173:5000/api';
+  }
 
   // API Endpoints
   static const String health = '/health';

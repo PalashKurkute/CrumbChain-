@@ -9,6 +9,11 @@ import 'listing_history_page.dart';
 import 'recommend_schemes_page.dart';
 import 'how_it_works_page.dart';
 import 'impact_tracker_page.dart';
+import 'nearby_page.dart';
+import 'leaderboard_page.dart';
+import 'redeem_points_page.dart';
+import 'change_password_page.dart';
+import 'settings_page.dart';
 
 class DonorHomePage extends StatefulWidget {
   final User user;
@@ -27,74 +32,111 @@ class _DonorHomePageState extends State<DonorHomePage> {
     return Scaffold(
       backgroundColor: Colors.white, // White background
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(height: 16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const SizedBox(height: 16),
 
-                // Logo and Profile Button section
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Centered Logo
-                    Center(
-                      child: Image.asset(
-                        'assets/images/logo.png',
-                        width: 120,
-                        height: 120,
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Icon(
-                            Icons.volunteer_activism,
-                            size: 100,
-                            color: Color(0xFFE07A3E),
-                          );
-                        },
-                      ),
-                    ),
-
-                    // Profile Button positioned on the right
-                    Positioned(
-                      right: 0,
-                      child: GestureDetector(
-                        onTap: () {
-                          _showProfileMenu(context);
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
+              // Logo and Profile Button section
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Centered Logo
+                  Center(
+                    child: Column(
+                      children: [
+                        Image.asset(
+                          'assets/images/logo.png',
+                          width: 120,
+                          height: 120,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Icon(
+                              Icons.volunteer_activism,
+                              size: 100,
+                              color: Color(0xFFE07A3E),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        // Points Display
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.grey.shade300),
+                            color: const Color(0xFFFCEEDD),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: const Color(0xFFE07A3E),
+                              width: 2,
+                            ),
                           ),
-                          child: Image.asset(
-                            'assets/images/profile.png',
-                            width: 32,
-                            height: 32,
-                            errorBuilder: (context, error, stackTrace) {
-                              return const Icon(
-                                Icons.person,
-                                size: 32,
-                                color: Colors.black87,
-                              );
-                            },
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.stars,
+                                color: Color(0xFFE07A3E),
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                '142 Points',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFFE07A3E),
+                                ),
+                              ),
+                            ],
                           ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Profile Button positioned on the right
+                  Positioned(
+                    right: 0,
+                    child: GestureDetector(
+                      onTap: () {
+                        _showProfileMenu(context);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Image.asset(
+                          'assets/images/profile.png',
+                          width: 32,
+                          height: 32,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Icon(
+                              Icons.person,
+                              size: 32,
+                              color: Colors.black87,
+                            );
+                          },
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
+              ),
 
-                const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-                // Feature Cards Grid
-                GridView.count(
+              // Feature Cards Grid
+              Expanded(
+                child: GridView.count(
                   crossAxisCount: 2,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
                   childAspectRatio: 0.95,
@@ -105,8 +147,8 @@ class _DonorHomePageState extends State<DonorHomePage> {
                       color: const Color(0xFF20B2AA),
                     ),
                     _buildFeatureCard(
-                      imagePath: 'assets/images/listing-tracker.png',
-                      label: 'Listing Tracker',
+                      imagePath: 'assets/images/nearby.png',
+                      label: 'Nearby Receivers',
                       color: const Color(0xFF48B2A5),
                     ),
                     _buildFeatureCard(
@@ -116,12 +158,12 @@ class _DonorHomePageState extends State<DonorHomePage> {
                     ),
                     _buildFeatureCard(
                       imagePath: 'assets/images/government_schemes.png',
-                      label: 'Recommend Schemes',
+                      label: 'Recommended Schemes',
                       color: const Color(0xFF48B2A5),
                     ),
                     _buildFeatureCard(
-                      imagePath: 'assets/images/how_it_works.png',
-                      label: 'How it Works',
+                      imagePath: 'assets/images/listing-tracker.png',
+                      label: 'Listing Tracker',
                       color: const Color(0xFF20B2AA),
                     ),
                     _buildFeatureCard(
@@ -131,16 +173,17 @@ class _DonorHomePageState extends State<DonorHomePage> {
                     ),
                   ],
                 ),
-
-                const SizedBox(height: 80),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
 
       // Bottom Navigation Bar
-      bottomNavigationBar: CommonFooter(selectedIndex: _selectedIndex),
+      bottomNavigationBar: CommonFooter(
+        selectedIndex: _selectedIndex,
+        user: widget.user,
+      ),
     );
   }
 
@@ -157,29 +200,37 @@ class _DonorHomePageState extends State<DonorHomePage> {
         } else if (label == 'Listing Tracker') {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const ListingTrackerPage()),
+            MaterialPageRoute(
+              builder: (context) => ListingTrackerPage(user: widget.user),
+            ),
           );
         } else if (label == 'Listing History') {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const ListingHistoryPage()),
+            MaterialPageRoute(
+              builder: (context) => ListingHistoryPage(user: widget.user),
+            ),
           );
-        } else if (label == 'Recommend Schemes') {
+        } else if (label == 'Recommended Schemes') {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const RecommendSchemesPage(),
+              builder: (context) => RecommendSchemesPage(user: widget.user),
             ),
-          );
-        } else if (label == 'How it Works') {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const HowItWorksPage()),
           );
         } else if (label == 'Impact Tracker') {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const ImpactTrackerPage()),
+            MaterialPageRoute(
+              builder: (context) => ImpactTrackerPage(user: widget.user),
+            ),
+          );
+        } else if (label == 'Nearby Receivers') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => NearbyPage(user: widget.user),
+            ),
           );
         }
       },
@@ -273,7 +324,8 @@ class _DonorHomePageState extends State<DonorHomePage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const CreateListingPage(),
+                      builder: (context) =>
+                          CreateListingPage(user: widget.user),
                     ),
                   );
                 },
@@ -292,10 +344,17 @@ class _DonorHomePageState extends State<DonorHomePage> {
                           color: const Color(0xFFE07A3E),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Icon(
-                          Icons.camera_alt,
-                          color: Colors.white,
-                          size: 24,
+                        child: Image.asset(
+                          'assets/images/camera.png',
+                          width: 24,
+                          height: 24,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Icon(
+                              Icons.camera_alt,
+                              color: Colors.white,
+                              size: 24,
+                            );
+                          },
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -348,10 +407,17 @@ class _DonorHomePageState extends State<DonorHomePage> {
                           color: Colors.green.shade600,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Icon(
-                          Icons.eco,
-                          color: Colors.white,
-                          size: 24,
+                        child: Image.asset(
+                          'assets/images/stale.png',
+                          width: 24,
+                          height: 24,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Icon(
+                              Icons.compost,
+                              color: Colors.white,
+                              size: 24,
+                            );
+                          },
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -396,8 +462,14 @@ class _DonorHomePageState extends State<DonorHomePage> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
+      isScrollControlled: true,
       builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 20,
+          bottom: 10, // Reduced from 20 to fix overflow
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -412,6 +484,87 @@ class _DonorHomePageState extends State<DonorHomePage> {
               ),
               title: Text(widget.user.fullName),
               subtitle: Text(widget.user.email),
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.leaderboard, color: Color(0xFFE07A3E)),
+              title: const Text('Leaderboard'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => LeaderboardPage(user: widget.user),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.card_giftcard,
+                color: Color(0xFFE07A3E),
+              ),
+              title: const Text('Redeem Points'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => RedeemPointsPage(user: widget.user),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.lock_outline, color: Color(0xFFE07A3E)),
+              title: const Text('Change Password'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ChangePasswordPage(user: widget.user),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings, color: Color(0xFFE07A3E)),
+              title: const Text('Settings'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SettingsPage(user: widget.user),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: Image.asset(
+                'assets/images/how_it_works.png',
+                width: 24,
+                height: 24,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(Icons.help_outline);
+                },
+              ),
+              title: const Text('How it Works'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => HowItWorksPage(user: widget.user),
+                  ),
+                );
+              },
             ),
             const Divider(),
             ListTile(
@@ -444,7 +597,7 @@ class _DonorHomePageState extends State<DonorHomePage> {
                 }
               },
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 10), // Reduced from 20 to fix overflow
           ],
         ),
       ),

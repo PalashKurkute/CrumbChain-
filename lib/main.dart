@@ -1,11 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'constants/app_colors.dart';
 import 'pages/login_page.dart';
 import 'services/auth_service.dart';
 import 'pages/donor_home_page.dart';
 import 'pages/receiver_home_page.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment variables
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    print('Error loading .env file: $e');
+  }
+
   runApp(const CrumbChainApp());
 }
 

@@ -1,8 +1,30 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../widgets/common_footer.dart';
+import '../models/user.dart';
 
 class CreateListingPage extends StatefulWidget {
-  const CreateListingPage({super.key});
+  final User? user;
+  final String? existingFoodName;
+  final String? existingFoodType;
+  final String? existingQuantity;
+  final String? existingLocation;
+  final String? existingDescription;
+  final String? existingImagePath;
+  final bool isEditing;
+
+  const CreateListingPage({
+    super.key,
+    this.user,
+    this.existingFoodName,
+    this.existingFoodType,
+    this.existingQuantity,
+    this.existingLocation,
+    this.existingDescription,
+    this.existingImagePath,
+    this.isEditing = false,
+  });
 
   @override
   State<CreateListingPage> createState() => _CreateListingPageState();
@@ -15,6 +37,94 @@ class _CreateListingPageState extends State<CreateListingPage> {
   final _descriptionController = TextEditingController();
   final _locationController = TextEditingController();
   String _selectedFoodType = 'Cooked Food';
+  File? _imageFile;
+  final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    // Pre-fill form if editing
+    if (widget.isEditing) {
+      _foodNameController.text = widget.existingFoodName ?? '';
+      _selectedFoodType = widget.existingFoodType ?? 'Cooked Food';
+      _quantityController.text = widget.existingQuantity ?? '';
+      _locationController.text = widget.existingLocation ?? '';
+      _descriptionController.text = widget.existingDescription ?? '';
+
+      // Load existing image if available
+      if (widget.existingImagePath != null &&
+          widget.existingImagePath!.isNotEmpty) {
+        _imageFile = File(widget.existingImagePath!);
+      }
+    }
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: source,
+        maxWidth: 1800,
+        maxHeight: 1800,
+        imageQuality: 85,
+      );
+
+      if (pickedFile != null) {
+        setState(() {
+          _imageFile = File(pickedFile.path);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error picking image: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showImageSourceDialog() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Choose Image Source',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: Color(0xFFE07A3E)),
+              title: const Text('Camera'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.photo_library,
+                color: Color(0xFFE07A3E),
+              ),
+              title: const Text('Gallery'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -73,12 +183,12 @@ class _CreateListingPageState extends State<CreateListingPage> {
                       shape: BoxShape.circle,
                     ),
                     child: Image.asset(
-                      'assets/images/food-donation.png',
+                      'assets/images/camera.png',
                       width: 48,
                       height: 48,
                       errorBuilder: (context, error, stackTrace) {
                         return const Icon(
-                          Icons.restaurant,
+                          Icons.camera_alt,
                           size: 48,
                           color: Colors.black87,
                         );
@@ -88,9 +198,11 @@ class _CreateListingPageState extends State<CreateListingPage> {
 
                   const SizedBox(height: 16),
 
-                  const Text(
-                    'Create Food Listing',
-                    style: TextStyle(
+                  Text(
+                    widget.isEditing
+                        ? 'Edit Food Listing'
+                        : 'Create Food Listing',
+                    style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
@@ -123,32 +235,75 @@ class _CreateListingPageState extends State<CreateListingPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Add Photo Section
-                    Container(
-                      width: double.infinity,
-                      height: 200,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFCEEDD),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey.shade300),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.add_a_photo,
-                            size: 60,
-                            color: Colors.grey.shade400,
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Click to add photo',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey.shade600,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
+                    GestureDetector(
+                      onTap: _showImageSourceDialog,
+                      child: Container(
+                        width: double.infinity,
+                        height: 200,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFCEEDD),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: _imageFile != null
+                            ? Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Image.file(
+                                      _imageFile!,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 8,
+                                    right: 8,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(8),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(
+                                              0.2,
+                                            ),
+                                            blurRadius: 4,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: IconButton(
+                                        icon: const Icon(
+                                          Icons.camera_alt,
+                                          color: Color(0xFFE07A3E),
+                                        ),
+                                        onPressed: _showImageSourceDialog,
+                                        tooltip: 'Retake Photo',
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.add_a_photo,
+                                    size: 60,
+                                    color: Colors.grey.shade400,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'Click to add photo',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.grey.shade600,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
                       ),
                     ),
 
@@ -326,8 +481,12 @@ class _CreateListingPageState extends State<CreateListingPage> {
                           if (_formKey.currentState!.validate()) {
                             // TODO: Submit listing to backend
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Listing created successfully!'),
+                              SnackBar(
+                                content: Text(
+                                  widget.isEditing
+                                      ? 'Listing updated successfully!'
+                                      : 'Listing created successfully!',
+                                ),
                                 backgroundColor: Colors.green,
                               ),
                             );
@@ -341,9 +500,11 @@ class _CreateListingPageState extends State<CreateListingPage> {
                           ),
                           elevation: 0,
                         ),
-                        child: const Text(
-                          'Create Listing',
-                          style: TextStyle(
+                        child: Text(
+                          widget.isEditing
+                              ? 'Update Listing'
+                              : 'Create Listing',
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
                             color: Colors.white,
@@ -360,7 +521,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
           ],
         ),
       ),
-      bottomNavigationBar: const CommonFooter(),
+      bottomNavigationBar: CommonFooter(user: widget.user),
     );
   }
 }

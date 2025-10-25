@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
+import '../pages/ai_chatbot_page.dart';
+import '../models/user.dart';
+import '../pages/donor_home_page.dart';
+import '../pages/receiver_home_page.dart';
 
 class CommonFooter extends StatelessWidget {
   final int selectedIndex;
+  final User? user; // Add user parameter
 
   const CommonFooter({
     super.key,
     this.selectedIndex = -1, // -1 means no item selected (for feature pages)
+    this.user, // Optional user parameter
   });
 
   @override
@@ -50,8 +56,29 @@ class CommonFooter extends StatelessWidget {
                 label: 'Home',
                 isSelected: selectedIndex == 1,
                 onTap: () {
-                  // Navigate back to home, removing all pages in between
-                  Navigator.of(context).popUntil((route) => route.isFirst);
+                  // Navigate to the appropriate home page based on user type
+                  if (user != null) {
+                    if (user!.isDonor) {
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DonorHomePage(user: user!),
+                        ),
+                        (route) => false, // Remove all previous routes
+                      );
+                    } else if (user!.isReceiver) {
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ReceiverHomePage(user: user!),
+                        ),
+                        (route) => false, // Remove all previous routes
+                      );
+                    }
+                  } else {
+                    // Fallback: just pop to first route if no user provided
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                  }
                 },
               ),
               // Right: AI Chatbot
@@ -63,10 +90,10 @@ class CommonFooter extends StatelessWidget {
                 isSelected: selectedIndex == 2,
                 onTap: () {
                   // Navigate to AI chatbot page
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('AI Chat coming soon!'),
-                      duration: Duration(seconds: 1),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AIChatbotPage(user: user),
                     ),
                   );
                 },

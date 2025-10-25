@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import '../widgets/common_footer.dart';
+import '../models/user.dart';
 
 class ListingHistoryPage extends StatefulWidget {
-  const ListingHistoryPage({super.key});
+  final User? user;
+
+  const ListingHistoryPage({super.key, this.user});
 
   @override
   State<ListingHistoryPage> createState() => _ListingHistoryPageState();
@@ -108,6 +111,7 @@ class _ListingHistoryPageState extends State<ListingHistoryPage> {
                     date: 'Jan 15, 2025',
                     servings: '15 people',
                     impact: '12 kg CO₂ saved',
+                    pointsEarned: 25,
                   ),
 
                   const SizedBox(height: 12),
@@ -117,6 +121,7 @@ class _ListingHistoryPageState extends State<ListingHistoryPage> {
                     date: 'Jan 10, 2025',
                     servings: '25 people',
                     impact: '20 kg CO₂ saved',
+                    pointsEarned: 35,
                   ),
 
                   const SizedBox(height: 12),
@@ -126,6 +131,7 @@ class _ListingHistoryPageState extends State<ListingHistoryPage> {
                     date: 'Jan 5, 2025',
                     servings: '10 people',
                     impact: '8 kg CO₂ saved',
+                    pointsEarned: 18,
                   ),
 
                   const SizedBox(height: 12),
@@ -135,6 +141,7 @@ class _ListingHistoryPageState extends State<ListingHistoryPage> {
                     date: 'Dec 28, 2024',
                     servings: '8 people',
                     impact: '5 kg CO₂ saved',
+                    pointsEarned: 15,
                   ),
                 ],
               ),
@@ -142,7 +149,7 @@ class _ListingHistoryPageState extends State<ListingHistoryPage> {
           ],
         ),
       ),
-      bottomNavigationBar: const CommonFooter(),
+      bottomNavigationBar: CommonFooter(user: widget.user),
     );
   }
 
@@ -151,6 +158,7 @@ class _ListingHistoryPageState extends State<ListingHistoryPage> {
     required String date,
     required String servings,
     required String impact,
+    required int pointsEarned,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -173,8 +181,10 @@ class _ListingHistoryPageState extends State<ListingHistoryPage> {
                     fontWeight: FontWeight.w600,
                     color: Colors.black87,
                   ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+              const SizedBox(width: 8),
               const Icon(Icons.check_circle, color: Colors.green, size: 24),
             ],
           ),
@@ -183,11 +193,14 @@ class _ListingHistoryPageState extends State<ListingHistoryPage> {
             children: [
               Icon(Icons.calendar_today, size: 16, color: Colors.grey.shade600),
               const SizedBox(width: 4),
-              Text(
-                date,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              Expanded(
+                child: Text(
+                  date,
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Icon(Icons.people, size: 16, color: Colors.grey.shade600),
               const SizedBox(width: 4),
               Text(
@@ -197,27 +210,63 @@ class _ListingHistoryPageState extends State<ListingHistoryPage> {
             ],
           ),
           const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.green.shade50,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.eco, size: 16, color: Colors.green),
-                const SizedBox(width: 4),
-                Text(
-                  impact,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.green,
-                  ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Points earned badge (Bottom Left)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
                 ),
-              ],
-            ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE07A3E).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFE07A3E)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.stars, size: 16, color: Color(0xFFE07A3E)),
+                    const SizedBox(width: 4),
+                    Text(
+                      '+$pointsEarned pts',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFFE07A3E),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Impact badge (Bottom Right)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.eco, size: 16, color: Colors.green),
+                    const SizedBox(width: 4),
+                    Text(
+                      impact,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),

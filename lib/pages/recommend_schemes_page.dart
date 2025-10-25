@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import '../widgets/common_footer.dart';
+import '../models/user.dart';
 
 class RecommendSchemesPage extends StatefulWidget {
-  const RecommendSchemesPage({super.key});
+  final User? user;
+
+  const RecommendSchemesPage({super.key, this.user});
 
   @override
   State<RecommendSchemesPage> createState() => _RecommendSchemesPageState();
@@ -146,7 +149,7 @@ class _RecommendSchemesPageState extends State<RecommendSchemesPage> {
           ],
         ),
       ),
-      bottomNavigationBar: const CommonFooter(),
+      bottomNavigationBar: CommonFooter(user: widget.user),
     );
   }
 

@@ -45,5 +45,15 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app needs your location to show nearby food donation centers and recipients.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>This app needs your location to show nearby food donation centers and recipients.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs camera access to take photos of food donations.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app needs photo library access to select photos of food donations.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app needs microphone access for video recording.</string>
 </dict>
 </plist>

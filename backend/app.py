@@ -261,6 +261,76 @@ def update_profile(current_user):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/auth/google-signin', methods=['POST'])
+def google_signin():
+    """Google Sign-In endpoint"""
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        if not data.get('email'):
+            return jsonify({'error': 'Email is required'}), 400
+        
+        email = data.get('email')
+        display_name = data.get('displayName', '')
+        user_type = data.get('userType', 'donor').lower()
+        
+        # Check if user exists
+        existing_user = users_collection.find_one({'email': email})
+        
+        if existing_user:
+            # User exists, generate token and return
+            token = jwt.encode({
+                'user_id': str(existing_user['_id']),
+                'email': existing_user['email'],
+                'userType': existing_user.get('userType', existing_user.get('user_type', user_type)),
+                'exp': datetime.utcnow() + timedelta(days=30)
+            }, app.config['SECRET_KEY'], algorithm='HS256')
+            
+            return jsonify({
+                'token': token,
+                'user': {
+                    '_id': str(existing_user['_id']),
+                    'email': existing_user['email'],
+                    'full_name': existing_user.get('name', display_name),
+                    'user_type': existing_user.get('userType', existing_user.get('user_type', user_type))
+                }
+            }), 200
+        else:
+            # Create new user
+            user_doc = {
+                'email': email,
+                'name': display_name,
+                'userType': user_type,
+                'created_at': datetime.now(),
+                'updated_at': datetime.now(),
+                'is_active': True,
+                'auth_provider': 'google'
+            }
+            
+            result = users_collection.insert_one(user_doc)
+            
+            # Generate token
+            token = jwt.encode({
+                'user_id': str(result.inserted_id),
+                'email': email,
+                'userType': user_type,
+                'exp': datetime.utcnow() + timedelta(days=30)
+            }, app.config['SECRET_KEY'], algorithm='HS256')
+            
+            return jsonify({
+                'token': token,
+                'user': {
+                    '_id': str(result.inserted_id),
+                    'email': email,
+                    'full_name': display_name,
+                    'user_type': user_type
+                }
+            }), 201
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)

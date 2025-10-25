@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import '../widgets/common_footer.dart';
+import '../models/user.dart';
 
 class ImpactTrackerPage extends StatefulWidget {
-  const ImpactTrackerPage({super.key});
+  final User? user;
+
+  const ImpactTrackerPage({super.key, this.user});
 
   @override
   State<ImpactTrackerPage> createState() => _ImpactTrackerPageState();
@@ -233,7 +236,7 @@ class _ImpactTrackerPageState extends State<ImpactTrackerPage> {
           ],
         ),
       ),
-      bottomNavigationBar: const CommonFooter(),
+      bottomNavigationBar: CommonFooter(user: widget.user),
     );
   }
 

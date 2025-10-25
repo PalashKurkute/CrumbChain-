@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'signup_page.dart';
 import '../services/auth_service.dart';
+import '../services/google_signin_service.dart';
 import '../models/user.dart';
 import 'donor_home_page.dart';
 import 'receiver_home_page.dart';
@@ -18,6 +19,7 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _authService = AuthService();
+  final _googleSignInService = GoogleSignInService();
   bool _obscurePassword = true;
   bool _isLoading = false;
 
@@ -26,6 +28,63 @@ class _LoginPageState extends State<LoginPage> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      print('🔄 Starting Google Sign-In for ${widget.userType}...');
+
+      final user = await _googleSignInService.signInWithGoogle(widget.userType);
+
+      if (!mounted) return;
+
+      if (user != null) {
+        print('✅ Google Sign-In successful, navigating...');
+
+        // Navigate to appropriate home page based on user type
+        if (user.isDonor) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => DonorHomePage(user: user)),
+          );
+        } else if (user.isReceiver) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ReceiverHomePage(user: user),
+            ),
+          );
+        }
+      } else {
+        print('❌ Google Sign-In cancelled');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Google Sign-In cancelled'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ Google Sign-In error: $e');
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Google Sign-In failed: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   Future<void> _handleSignIn() async {
@@ -375,15 +434,7 @@ class _LoginPageState extends State<LoginPage> {
                             ],
                           ),
                           child: IconButton(
-                            onPressed: () {
-                              // TODO: Implement Google Sign In
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Google Sign In clicked'),
-                                  duration: Duration(seconds: 1),
-                                ),
-                              );
-                            },
+                            onPressed: _isLoading ? null : _handleGoogleSignIn,
                             icon: Image.asset(
                               'assets/images/googlelogo.png',
                               width: 24,

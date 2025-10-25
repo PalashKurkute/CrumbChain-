@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import '../widgets/common_footer.dart';
+import '../models/user.dart';
 
 class HowItWorksPage extends StatefulWidget {
-  const HowItWorksPage({super.key});
+  final User? user;
+
+  const HowItWorksPage({super.key, this.user});
 
   @override
   State<HowItWorksPage> createState() => _HowItWorksPageState();
@@ -173,7 +176,7 @@ class _HowItWorksPageState extends State<HowItWorksPage> {
           ],
         ),
       ),
-      bottomNavigationBar: const CommonFooter(),
+      bottomNavigationBar: CommonFooter(user: widget.user),
     );
   }
 
