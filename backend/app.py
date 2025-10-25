@@ -31,6 +31,7 @@ try:
     client = MongoClient(MONGODB_URI)
     db = client[DATABASE_NAME]
     users_collection = db['users']
+    listings_collection = db['listings']
     print(f"✅ Connected to MongoDB: {DATABASE_NAME}")
 except Exception as e:
     print(f"❌ MongoDB connection error: {e}")
@@ -330,6 +331,237 @@ def google_signin():
             
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/listings', methods=['POST'])
+@token_required
+def create_listing(current_user):
+    """Create a new food listing"""
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        required_fields = [
+            'foodType', 'quantity', 'dietaryTag', 
+            'temperatureStatus', 'location', 'packagingType'
+        ]
+        for field in required_fields:
+            if field not in data:
+                return jsonify({
+                    'success': False,
+                    'message': f'Missing required field: {field}'
+                }), 400
+        
+        # Create listing document
+        listing_doc = {
+            'userId': str(current_user['_id']),
+            'userEmail': current_user['email'],
+            'userName': current_user.get('name', current_user.get('full_name', '')),
+            'foodType': data['foodType'],
+            'description': data.get('description', ''),
+            'quantity': data['quantity'],
+            'datePrepared': data.get('datePrepared'),
+            'dietaryTag': data['dietaryTag'],
+            'temperatureStatus': data['temperatureStatus'],
+            'location': data['location'],
+            'pickupTime': data.get('pickupTime'),
+            'packagingType': data['packagingType'],
+            'isPaidDonation': data.get('isPaidDonation', False),
+            'amount': data.get('amount', 0),
+            'imageUrl': data.get('imageUrl', ''),
+            'status': 'active',  # active, claimed, completed, cancelled
+            'createdAt': datetime.now(),
+            'updatedAt': datetime.now()
+        }
+        
+        # Insert listing
+        result = listings_collection.insert_one(listing_doc)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Listing created successfully',
+            'data': {
+                'listingId': str(result.inserted_id),
+                'listing': {
+                    'id': str(result.inserted_id),
+                    'foodType': data['foodType'],
+                    'quantity': data['quantity'],
+                    'location': data['location'],
+                    'status': 'active'
+                }
+            }
+        }), 201
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/listings', methods=['GET'])
+@token_required
+def get_listings(current_user):
+    """Get all listings or user's listings"""
+    try:
+        # Query parameters
+        user_only = request.args.get('userOnly', 'false').lower() == 'true'
+        status = request.args.get('status', None)
+        
+        # Build query
+        query = {}
+        if user_only:
+            query['userId'] = str(current_user['_id'])
+        if status:
+            query['status'] = status
+        
+        # Fetch listings
+        listings = list(listings_collection.find(query).sort('createdAt', -1))
+        
+        # Convert ObjectId to string
+        for listing in listings:
+            listing['_id'] = str(listing['_id'])
+            if 'createdAt' in listing:
+                listing['createdAt'] = listing['createdAt'].isoformat()
+            if 'updatedAt' in listing:
+                listing['updatedAt'] = listing['updatedAt'].isoformat()
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'listings': listings,
+                'count': len(listings)
+            }
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/listings/<listing_id>', methods=['GET'])
+@token_required
+def get_listing(current_user, listing_id):
+    """Get a specific listing by ID"""
+    try:
+        from bson import ObjectId
+        
+        listing = listings_collection.find_one({'_id': ObjectId(listing_id)})
+        
+        if not listing:
+            return jsonify({
+                'success': False,
+                'message': 'Listing not found'
+            }), 404
+        
+        # Convert ObjectId to string
+        listing['_id'] = str(listing['_id'])
+        if 'createdAt' in listing:
+            listing['createdAt'] = listing['createdAt'].isoformat()
+        if 'updatedAt' in listing:
+            listing['updatedAt'] = listing['updatedAt'].isoformat()
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'listing': listing
+            }
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/listings/<listing_id>', methods=['PUT'])
+@token_required
+def update_listing(current_user, listing_id):
+    """Update a listing"""
+    try:
+        from bson import ObjectId
+        
+        data = request.get_json()
+        
+        # Check if listing exists and belongs to user
+        listing = listings_collection.find_one({'_id': ObjectId(listing_id)})
+        
+        if not listing:
+            return jsonify({
+                'success': False,
+                'message': 'Listing not found'
+            }), 404
+        
+        if listing['userId'] != str(current_user['_id']):
+            return jsonify({
+                'success': False,
+                'message': 'Unauthorized to update this listing'
+            }), 403
+        
+        # Fields that can be updated
+        update_fields = {}
+        updatable_fields = [
+            'foodType', 'description', 'quantity', 'datePrepared',
+            'dietaryTag', 'temperatureStatus', 'location', 'pickupTime',
+            'packagingType', 'isPaidDonation', 'amount', 'imageUrl', 'status'
+        ]
+        
+        for field in updatable_fields:
+            if field in data:
+                update_fields[field] = data[field]
+        
+        if update_fields:
+            update_fields['updatedAt'] = datetime.now()
+            listings_collection.update_one(
+                {'_id': ObjectId(listing_id)},
+                {'$set': update_fields}
+            )
+        
+        return jsonify({
+            'success': True,
+            'message': 'Listing updated successfully'
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/listings/<listing_id>', methods=['DELETE'])
+@token_required
+def delete_listing(current_user, listing_id):
+    """Delete a listing"""
+    try:
+        from bson import ObjectId
+        
+        # Check if listing exists and belongs to user
+        listing = listings_collection.find_one({'_id': ObjectId(listing_id)})
+        
+        if not listing:
+            return jsonify({
+                'success': False,
+                'message': 'Listing not found'
+            }), 404
+        
+        if listing['userId'] != str(current_user['_id']):
+            return jsonify({
+                'success': False,
+                'message': 'Unauthorized to delete this listing'
+            }), 403
+        
+        # Delete listing
+        listings_collection.delete_one({'_id': ObjectId(listing_id)})
+        
+        return jsonify({
+            'success': True,
+            'message': 'Listing deleted successfully'
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
