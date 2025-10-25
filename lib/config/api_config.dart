@@ -1,25 +1,27 @@
 import 'dart:io';
 
 class ApiConfig {
-  // IMPORTANT: Set this to true when using emulator, false when using physical device
-  // If you get 404 errors, try switching this value
-  static const bool _useEmulator =
-      false; // Set to false for physical device via USB
+  // IMPORTANT: Connection mode selection
+  // Options: 'usb', 'wifi', 'emulator'
+  static const String _connectionMode = 'usb'; // Set to 'usb' when using adb reverse
 
-  // Automatically detects emulator vs physical device
-  // For emulator: uses 10.0.2.2
-  // For physical device: uses your computer's local IP
+  // Automatically configures the correct endpoint
+  // usb: uses localhost (requires: adb reverse tcp:5000 tcp:5000)
+  // wifi: uses your computer's IP on local network
+  // emulator: uses 10.0.2.2
   static String get baseUrl {
     if (Platform.isAndroid) {
       const String localIp =
           '10.9.31.191'; // Your computer's IP on local network (UPDATED)
       const String emulatorIp = '10.0.2.2'; // Emulator special IP
+      const String usbIp = 'localhost'; // USB connection via adb reverse
 
-      final ip = _useEmulator ? emulatorIp : localIp;
+      final ip = _connectionMode == 'usb' 
+          ? usbIp 
+          : (_connectionMode == 'emulator' ? emulatorIp : localIp);
       final url = 'http://$ip:5000/api';
-      print(
-        '📡 API Config - Using ${_useEmulator ? "Emulator" : "Physical Device"} IP: $ip',
-      );
+      print('📡 API Config - Connection Mode: $_connectionMode');
+      print('📡 Using IP: $ip');
       print('📡 Full baseUrl: $url');
       return url;
     }
