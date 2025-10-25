@@ -164,7 +164,6 @@ class _ListingTrackerPageState extends State<ListingTrackerPage> {
     required String status,
     required Color statusColor,
     required String time,
-    String? imagePath,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -197,19 +196,13 @@ class _ListingTrackerPageState extends State<ListingTrackerPage> {
                   // Edit button (Pencil icon)
                   InkWell(
                     onTap: () {
-                      // Navigate to edit page with pre-filled data
+                      // Navigate to edit page
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => CreateListingPage(
                             user: widget.user,
                             isEditing: true,
-                            existingFoodName: title,
-                            existingFoodType: foodType,
-                            existingQuantity: quantity,
-                            existingLocation: location,
-                            existingDescription: description,
-                            existingImagePath: imagePath,
                           ),
                         ),
                       );
