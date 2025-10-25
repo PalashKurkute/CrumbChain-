@@ -22,6 +22,10 @@ class Listing {
   // Optional: Geographic coordinates if available
   final double? latitude;
   final double? longitude;
+  
+  // Donor rating information
+  final double? donorRating;
+  final int? donorTotalRatings;
 
   Listing({
     required this.id,
@@ -45,6 +49,8 @@ class Listing {
     required this.updatedAt,
     this.latitude,
     this.longitude,
+    this.donorRating,
+    this.donorTotalRatings,
   });
 
   factory Listing.fromJson(Map<String, dynamic> json) {
@@ -74,6 +80,8 @@ class Listing {
           : DateTime.now(),
       latitude: json['latitude'] as double?,
       longitude: json['longitude'] as double?,
+      donorRating: (json['donorRating'] as num?)?.toDouble(),
+      donorTotalRatings: json['donorTotalRatings'] as int?,
     );
   }
 

@@ -95,6 +95,64 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+# ============= REWARD SYSTEM HELPER FUNCTIONS =============
+
+def calculate_reward_points(listing):
+    """
+    Calculate reward points based on listing details
+    
+    Base points: 10
+    Bonus points for:
+    - Meal type (breakfast: +5, lunch: +7, dinner: +7, snacks: +3)
+    - Quantity (per serving: +2, max bonus: +20)
+    - Urgency (immediate: +10, today: +7, this_week: +5)
+    
+    Returns:
+        int: Total reward points
+    """
+    base_points = 10
+    bonus_points = 0
+    
+    # Meal type bonus
+    meal_type = listing.get('mealType', '').lower()
+    meal_bonuses = {
+        'breakfast': 5,
+        'lunch': 7,
+        'dinner': 7,
+        'snacks': 3,
+        'dessert': 4
+    }
+    for meal, bonus in meal_bonuses.items():
+        if meal in meal_type:
+            bonus_points += bonus
+            break
+    
+    # Quantity bonus (parse quantity string)
+    quantity_str = listing.get('quantity', '0')
+    try:
+        # Extract number from quantity string (e.g., "5 servings" -> 5)
+        quantity = int(''.join(filter(str.isdigit, quantity_str)))
+        quantity_bonus = min(quantity * 2, 20)  # Max 20 bonus points
+        bonus_points += quantity_bonus
+    except:
+        pass
+    
+    # Urgency bonus (if exists)
+    urgency = listing.get('urgency', '').lower()
+    urgency_bonuses = {
+        'immediate': 10,
+        'today': 7,
+        'this_week': 5,
+        'this_month': 3
+    }
+    bonus_points += urgency_bonuses.get(urgency, 0)
+    
+    total_points = base_points + bonus_points
+    
+    print(f"💎 Reward calculation: Base({base_points}) + Bonus({bonus_points}) = {total_points} points")
+    
+    return total_points
+
 # ============= NOTIFICATION HELPER FUNCTIONS =============
 
 def create_notification(user_id, notification_type, title, message, **kwargs):
@@ -134,6 +192,10 @@ def create_notification(user_id, notification_type, title, message, **kwargs):
             notification['relatedUserName'] = kwargs['relatedUserName']
         if 'orderStatus' in kwargs:
             notification['orderStatus'] = kwargs['orderStatus']
+        if 'rewardPoints' in kwargs:
+            notification['rewardPoints'] = kwargs['rewardPoints']
+        if 'rating' in kwargs:
+            notification['rating'] = kwargs['rating']
         if 'metadata' in kwargs:
             notification['metadata'] = kwargs['metadata']
         
@@ -301,7 +363,12 @@ def signup():
             'userType': data['userType'].lower(),
             'created_at': datetime.now(),
             'updated_at': datetime.now(),
-            'is_active': True
+            'is_active': True,
+            'rewardPoints': 0,  # Initialize reward points for receivers
+            'totalOrdersReceived': 0,  # Track total orders received
+            'rating': 0.0,  # Average rating for donors
+            'totalRatings': 0,  # Total number of ratings received
+            'ratingSum': 0  # Sum of all ratings (for calculating average)
         }
         
         # Insert user
@@ -324,7 +391,11 @@ def signup():
                     'id': str(result.inserted_id),
                     'email': data['email'],
                     'name': data['name'],
-                    'userType': data['userType'].lower()
+                    'userType': data['userType'].lower(),
+                    'rewardPoints': 0,
+                    'totalOrdersReceived': 0,
+                    'rating': 0.0,
+                    'totalRatings': 0
                 }
             }
         }), 201
@@ -388,7 +459,11 @@ def login():
                     'id': str(user['_id']),
                     'email': user['email'],
                     'name': user.get('name', user.get('full_name', '')),
-                    'userType': user.get('userType', user.get('user_type', 'donor'))
+                    'userType': user.get('userType', user.get('user_type', 'donor')),
+                    'rewardPoints': user.get('rewardPoints', 0),
+                    'totalOrdersReceived': user.get('totalOrdersReceived', 0),
+                    'rating': user.get('rating', 0.0),
+                    'totalRatings': user.get('totalRatings', 0)
                 }
             }
         }), 200
@@ -620,13 +695,21 @@ def get_listings():
         # Fetch listings
         listings = list(listings_collection.find(query).sort('createdAt', -1))
         
-        # Convert ObjectId to string
+        # Convert ObjectId to string and add donor rating info
         for listing in listings:
             listing['_id'] = str(listing['_id'])
             if 'createdAt' in listing:
                 listing['createdAt'] = listing['createdAt'].isoformat()
             if 'updatedAt' in listing:
                 listing['updatedAt'] = listing['updatedAt'].isoformat()
+            
+            # Add donor rating information
+            if 'userId' in listing:
+                from bson import ObjectId
+                donor = users_collection.find_one({'_id': ObjectId(listing['userId'])})
+                if donor:
+                    listing['donorRating'] = donor.get('rating', 0.0)
+                    listing['donorTotalRatings'] = donor.get('totalRatings', 0)
         
         return jsonify({
             'success': True,
@@ -1171,6 +1254,31 @@ def update_order_status(current_user, listing_id):
             
             if donor and receiver:
                 notify_order_status_change(listing, donor, receiver, new_status)
+                
+                # Award reward points when order is delivered
+                if new_status == 'delivered':
+                    reward_points = calculate_reward_points(listing)
+                    users_collection.update_one(
+                        {'_id': ObjectId(listing.get('claimedBy'))},
+                        {
+                            '$inc': {
+                                'rewardPoints': reward_points,
+                                'totalOrdersReceived': 1
+                            }
+                        }
+                    )
+                    
+                    # Create reward notification for receiver
+                    create_notification(
+                        listing.get('claimedBy'),
+                        'reward_earned',
+                        '🎉 Reward Points Earned!',
+                        f'You earned {reward_points} points for receiving this order!',
+                        listingId=listing_id,
+                        rewardPoints=reward_points
+                    )
+                    
+                    print(f'✅ Awarded {reward_points} points to receiver {receiver["name"]}')
         
         # If status is completed, DELETE the listing instead of updating
         if new_status == 'completed':
@@ -1356,6 +1464,180 @@ def delete_order(current_user, order_id):
         return jsonify({
             'success': True,
             'message': 'Order deleted successfully'
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+# ============= RATING ENDPOINTS =============
+
+@app.route('/api/ratings/submit', methods=['POST'])
+@token_required
+def submit_rating(current_user):
+    """Submit a rating for a donor after order completion"""
+    try:
+        from bson import ObjectId
+        
+        data = request.get_json()
+        listing_id = data.get('listingId')
+        donor_id = data.get('donorId')
+        rating = data.get('rating')
+        review = data.get('review', '')
+        
+        # Validate inputs
+        if not listing_id or not donor_id or rating is None:
+            return jsonify({
+                'success': False,
+                'message': 'listingId, donorId, and rating are required'
+            }), 400
+        
+        if not isinstance(rating, (int, float)) or rating < 1 or rating > 5:
+            return jsonify({
+                'success': False,
+                'message': 'Rating must be between 1 and 5'
+            }), 400
+        
+        # Check if user is a receiver
+        if current_user.get('userType', '').lower() != 'receiver':
+            return jsonify({
+                'success': False,
+                'message': 'Only receivers can submit ratings'
+            }), 403
+        
+        receiver_id = str(current_user['_id'])
+        
+        # Check if rating already exists for this order
+        existing_rating = db['ratings'].find_one({
+            'listingId': listing_id,
+            'receiverId': receiver_id
+        })
+        
+        if existing_rating:
+            return jsonify({
+                'success': False,
+                'message': 'You have already rated this order'
+            }), 400
+        
+        # Create rating document
+        rating_doc = {
+            'listingId': listing_id,
+            'donorId': donor_id,
+            'receiverId': receiver_id,
+            'rating': float(rating),
+            'review': review,
+            'createdAt': datetime.now()
+        }
+        
+        # Insert rating
+        db['ratings'].insert_one(rating_doc)
+        
+        # Update donor's average rating
+        donor = users_collection.find_one({'_id': ObjectId(donor_id)})
+        if donor:
+            current_rating_sum = donor.get('ratingSum', 0)
+            current_total_ratings = donor.get('totalRatings', 0)
+            
+            new_rating_sum = current_rating_sum + rating
+            new_total_ratings = current_total_ratings + 1
+            new_average = new_rating_sum / new_total_ratings
+            
+            users_collection.update_one(
+                {'_id': ObjectId(donor_id)},
+                {
+                    '$set': {
+                        'rating': round(new_average, 2),
+                        'totalRatings': new_total_ratings,
+                        'ratingSum': new_rating_sum
+                    }
+                }
+            )
+            
+            # Create notification for donor
+            create_notification(
+                donor_id,
+                'rating_received',
+                '⭐ New Rating Received!',
+                f'You received a {rating}-star rating! Your new average is {round(new_average, 2)}⭐',
+                listingId=listing_id,
+                rating=rating
+            )
+        
+        return jsonify({
+            'success': True,
+            'message': 'Rating submitted successfully',
+            'data': {
+                'rating': rating,
+                'review': review
+            }
+        }), 201
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/ratings/check/<listing_id>', methods=['GET'])
+@token_required
+def check_rating_submitted(current_user, listing_id):
+    """Check if user has already submitted rating for this listing"""
+    try:
+        receiver_id = str(current_user['_id'])
+        
+        rating = db['ratings'].find_one({
+            'listingId': listing_id,
+            'receiverId': receiver_id
+        })
+        
+        return jsonify({
+            'success': True,
+            'hasRated': rating is not None,
+            'rating': {
+                'rating': rating.get('rating'),
+                'review': rating.get('review'),
+                'createdAt': rating.get('createdAt').isoformat()
+            } if rating else None
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/ratings/donor/<donor_id>', methods=['GET'])
+def get_donor_ratings(donor_id):
+    """Get all ratings for a donor (public endpoint)"""
+    try:
+        from bson import ObjectId
+        
+        # Get donor info
+        donor = users_collection.find_one({'_id': ObjectId(donor_id)})
+        
+        if not donor:
+            return jsonify({
+                'success': False,
+                'message': 'Donor not found'
+            }), 404
+        
+        # Get all ratings for this donor
+        ratings = list(db['ratings'].find({'donorId': donor_id}).sort('createdAt', -1))
+        
+        # Convert ObjectId and dates
+        for rating in ratings:
+            rating['_id'] = str(rating['_id'])
+            rating['createdAt'] = rating['createdAt'].isoformat()
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'averageRating': donor.get('rating', 0.0),
+                'totalRatings': donor.get('totalRatings', 0),
+                'ratings': ratings
+            }
         }), 200
         
     except Exception as e:

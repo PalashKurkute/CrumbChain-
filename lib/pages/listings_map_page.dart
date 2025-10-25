@@ -374,6 +374,25 @@ class _ListingsMapPageState extends State<ListingsMapPage> {
                         ),
                       ],
                     ),
+                    // Display donor rating
+                    if (listing.donorRating != null && listing.donorRating! > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.star, size: 14, color: Colors.amber),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${listing.donorRating!.toStringAsFixed(1)} (${listing.donorTotalRatings ?? 0})',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey[700],
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -478,6 +497,34 @@ class _ListingsMapPageState extends State<ListingsMapPage> {
                       ),
                     ],
                   ),
+                  
+                  // Donor rating
+                  if (listing.donorRating != null && listing.donorRating! > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.star, size: 16, color: Colors.amber),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${listing.donorRating!.toStringAsFixed(1)} rating',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.amber,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '(${listing.donorTotalRatings ?? 0} reviews)',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   const SizedBox(height: 16),
 
                   // Description
@@ -664,58 +711,6 @@ class _ListingsMapPageState extends State<ListingsMapPage> {
         ],
       ),
     );
-  }
-
-  Widget _buildInfoChip(IconData icon, String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              color: color,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  IconData _getDietaryIcon(String dietaryTag) {
-    switch (dietaryTag.toLowerCase()) {
-      case 'vegetarian':
-      case 'veg':
-        return Icons.eco;
-      case 'non-vegetarian':
-      case 'non-veg':
-        return Icons.set_meal;
-      case 'vegan':
-        return Icons.spa;
-      default:
-        return Icons.restaurant;
-    }
-  }
-
-  IconData _getTemperatureIcon(String temperature) {
-    switch (temperature.toLowerCase()) {
-      case 'hot':
-        return Icons.local_fire_department;
-      case 'cold':
-        return Icons.ac_unit;
-      default:
-        return Icons.thermostat;
-    }
   }
 
   @override

@@ -78,6 +78,10 @@ class AppNotification {
         return '⏳';
       case 'message':
         return '💬';
+      case 'reward_earned':
+        return '🎉';
+      case 'rating_received':
+        return '⭐';
       default:
         return '📢';
     }
@@ -94,6 +98,10 @@ class AppNotification {
         return 0xFFFFA500; // Orange
       case 'message':
         return 0xFF4CAF50; // Green
+      case 'reward_earned':
+        return 0xFFFFD700; // Gold
+      case 'rating_received':
+        return 0xFFFFA500; // Orange/Amber
       default:
         return 0xFF757575; // Grey
     }

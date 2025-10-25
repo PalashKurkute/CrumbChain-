@@ -6,6 +6,7 @@ import 'create_requirements_page.dart';
 import 'listings_map_page.dart';
 import 'order_history_page.dart';
 import 'live_order_tracker_page.dart';
+import 'rewards_page.dart';
 
 class ReceiverHomePage extends StatefulWidget {
   final User user;
@@ -37,57 +38,18 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
                 children: [
                   // Centered Logo
                   Center(
-                    child: Column(
-                      children: [
-                        Image.asset(
-                          'assets/images/logo.png',
-                          width: 120,
-                          height: 120,
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const Icon(
-                              Icons.volunteer_activism,
-                              size: 100,
-                              color: Color(0xFFE07A3E),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 8),
-                        // Points Display
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFCEEDD),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: const Color(0xFFE07A3E),
-                              width: 2,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.stars,
-                                color: Color(0xFFE07A3E),
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              const Text(
-                                '85 Points',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFFE07A3E),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                    child: Image.asset(
+                      'assets/images/logo.png',
+                      width: 120,
+                      height: 120,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Icon(
+                          Icons.volunteer_activism,
+                          size: 100,
+                          color: Color(0xFFE07A3E),
+                        );
+                      },
                     ),
                   ),
 
@@ -153,6 +115,11 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
                       label: 'Live Order Tracker',
                       color: const Color(0xFF48B2A5),
                     ),
+                    _buildFeatureCard(
+                      imagePath: 'assets/images/rewards.png',
+                      label: 'My Rewards',
+                      color: const Color(0xFFFFD700),
+                    ),
                   ],
                 ),
               ),
@@ -203,6 +170,13 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
             context,
             MaterialPageRoute(
               builder: (context) => LiveOrderTrackerPage(user: widget.user),
+            ),
+          );
+        } else if (label == 'My Rewards') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => RewardsPage(user: widget.user),
             ),
           );
         }

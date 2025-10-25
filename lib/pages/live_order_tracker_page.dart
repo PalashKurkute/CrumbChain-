@@ -3,6 +3,7 @@ import 'dart:async';
 import '../widgets/common_footer.dart';
 import '../models/user.dart';
 import '../services/order_service.dart';
+import '../services/rating_service.dart';
 
 /// Live Order Tracker for Receivers - Real-time tracking with backend data
 class LiveOrderTrackerPage extends StatefulWidget {
@@ -16,6 +17,7 @@ class LiveOrderTrackerPage extends StatefulWidget {
 
 class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
   final OrderService _orderService = OrderService();
+  final RatingService _ratingService = RatingService();
   List<dynamic> _activeOrders = [];
   List<dynamic> _recentOrders = [];
   bool _isLoading = true;
@@ -71,7 +73,7 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
     }
   }
 
-  Future<void> _updateOrderStatus(String listingId, String currentStatus) async {
+  Future<void> _updateOrderStatus(String listingId, String currentStatus, [Map<String, dynamic>? orderData]) async {
     // Determine next status based on current status
     String nextStatus;
     String statusMessage;
@@ -130,29 +132,9 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
         // Reload orders to reflect changes
         await _loadActiveOrders();
 
-        // If completed, show celebration message
-        if (nextStatus == 'completed' && mounted) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Row(
-                children: const [
-                  Icon(Icons.celebration, color: Colors.orange),
-                  SizedBox(width: 8),
-                  Text('Order Completed!'),
-                ],
-              ),
-              content: const Text(
-                'Thank you for using CrumbChain! This order has been successfully completed and will be removed from active listings.',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('OK'),
-                ),
-              ],
-            ),
-          );
+        // If completed, show rating dialog
+        if (nextStatus == 'completed' && mounted && orderData != null) {
+          _showRatingDialog(orderData);
         }
       } else {
         // Show error message
@@ -257,16 +239,16 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
                       children: [
                         // Top section with logo
                         Padding(
-                          padding: const EdgeInsets.all(16.0),
+                          padding: const EdgeInsets.all(12.0),
                           child: Image.asset(
                             'assets/images/logo.png',
-                            width: 120,
-                            height: 120,
+                            width: 100,
+                            height: 100,
                             fit: BoxFit.contain,
                             errorBuilder: (context, error, stackTrace) {
                               return const Icon(
                                 Icons.volunteer_activism,
-                                size: 100,
+                                size: 80,
                                 color: Color(0xFFE07A3E),
                               );
                             },
@@ -277,42 +259,42 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
                         Container(
                           width: double.infinity,
                           color: const Color(0xFFFCEEDD),
-                          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                           child: Column(
                             children: [
                               // Feature icon
                               Container(
-                                padding: const EdgeInsets.all(20),
+                                padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
                                   color: Colors.black.withOpacity(0.05),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Image.asset(
                                   'assets/images/live-tracker.png',
-                                  width: 48,
-                                  height: 48,
+                                  width: 40,
+                                  height: 40,
                                   errorBuilder: (context, error, stackTrace) {
                                     return const Icon(
                                       Icons.local_shipping,
-                                      size: 48,
+                                      size: 40,
                                       color: Colors.black87,
                                     );
                                   },
                                 ),
                               ),
 
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 12),
 
                               const Text(
                                 'Live Order Tracker',
                                 style: TextStyle(
-                                  fontSize: 24,
+                                  fontSize: 22,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.black87,
                                 ),
                               ),
 
-                              const SizedBox(height: 12),
+                              const SizedBox(height: 8),
 
                               Text(
                                 'Track your active deliveries in real-time',
@@ -838,7 +820,7 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () => _updateOrderStatus(order['_id'], status),
+                onPressed: () => _updateOrderStatus(order['_id'], status, order),
                 icon: Icon(_getNextStatusIcon(status), size: 18),
                 label: Text(_getNextStatusButtonText(status)),
                 style: ElevatedButton.styleFrom(
@@ -1187,5 +1169,133 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
     } catch (e) {
       return 'Recently';
     }
+  }
+
+  void _showRatingDialog(Map<String, dynamic> order) {
+    double rating = 5.0;
+    final TextEditingController reviewController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Row(
+                children: const [
+                  Icon(Icons.star, color: Colors.amber),
+                  SizedBox(width: 8),
+                  Text('Rate Your Experience'),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'How was your experience with ${order['userName'] ?? 'the donor'}?',
+                      style: const TextStyle(fontSize: 15),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Rating:',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(5, (index) {
+                        return IconButton(
+                          onPressed: () {
+                            setState(() {
+                              rating = (index + 1).toDouble();
+                            });
+                          },
+                          icon: Icon(
+                            index < rating ? Icons.star : Icons.star_border,
+                            color: Colors.amber,
+                            size: 40,
+                          ),
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Review (Optional):',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: reviewController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        hintText: 'Share your experience...',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                    // Show completion message without rating
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Order completed! You can rate later from notifications.'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  },
+                  child: const Text('Skip'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    Navigator.pop(dialogContext);
+                    
+                    // Submit rating
+                    final result = await _ratingService.submitRating(
+                      listingId: order['_id'],
+                      donorId: order['userId'],
+                      rating: rating,
+                      review: reviewController.text,
+                    );
+                    
+                    if (mounted) {
+                      if (result['success'] == true) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Thank you for your ${rating.toInt()}-star rating! 🎉'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(result['message'] ?? 'Failed to submit rating'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF20B2AA),
+                  ),
+                  child: const Text('Submit Rating'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 }
