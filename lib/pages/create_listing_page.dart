@@ -22,7 +22,7 @@ class CreateListingPage extends StatefulWidget {
 class _CreateListingPageState extends State<CreateListingPage> {
   final _formKey = GlobalKey<FormState>();
   final _listingService = ListingService();
-  
+
   // Controllers
   final _foodTypeController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -55,7 +55,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
   int? _predictedExpiryDays;
   bool _isLoadingPrediction = false;
   double? _predictionConfidence;
-  
+
   // Loading state for submission
   bool _isSubmitting = false;
 
@@ -194,13 +194,93 @@ class _CreateListingPageState extends State<CreateListingPage> {
     final foodLower = foodType.toLowerCase();
 
     // Food category features (0-1 normalized)
-    features['is_dairy'] = _containsAny(foodLower, ['milk', 'cheese', 'yogurt', 'cream', 'butter', 'paneer']) ? 1.0 : 0.0;
-    features['is_meat'] = _containsAny(foodLower, ['chicken', 'mutton', 'beef', 'pork', 'meat', 'fish', 'seafood', 'prawn', 'egg']) ? 1.0 : 0.0;
-    features['is_vegetable'] = _containsAny(foodLower, ['vegetable', 'veggie', 'salad', 'lettuce', 'spinach', 'cabbage', 'carrot', 'tomato']) ? 1.0 : 0.0;
-    features['is_fruit'] = _containsAny(foodLower, ['fruit', 'apple', 'banana', 'orange', 'mango', 'grape', 'berry']) ? 1.0 : 0.0;
-    features['is_grain'] = _containsAny(foodLower, ['rice', 'bread', 'pasta', 'noodle', 'roti', 'chapati', 'biryani', 'pulao']) ? 1.0 : 0.0;
-    features['is_bakery'] = _containsAny(foodLower, ['cake', 'pastry', 'cookie', 'biscuit', 'donut', 'muffin', 'bread']) ? 1.0 : 0.0;
-    features['is_prepared'] = _containsAny(foodLower, ['curry', 'stew', 'soup', 'cooked', 'fried', 'pizza', 'burger']) ? 1.0 : 0.0;
+    features['is_dairy'] =
+        _containsAny(foodLower, [
+          'milk',
+          'cheese',
+          'yogurt',
+          'cream',
+          'butter',
+          'paneer',
+        ])
+        ? 1.0
+        : 0.0;
+    features['is_meat'] =
+        _containsAny(foodLower, [
+          'chicken',
+          'mutton',
+          'beef',
+          'pork',
+          'meat',
+          'fish',
+          'seafood',
+          'prawn',
+          'egg',
+        ])
+        ? 1.0
+        : 0.0;
+    features['is_vegetable'] =
+        _containsAny(foodLower, [
+          'vegetable',
+          'veggie',
+          'salad',
+          'lettuce',
+          'spinach',
+          'cabbage',
+          'carrot',
+          'tomato',
+        ])
+        ? 1.0
+        : 0.0;
+    features['is_fruit'] =
+        _containsAny(foodLower, [
+          'fruit',
+          'apple',
+          'banana',
+          'orange',
+          'mango',
+          'grape',
+          'berry',
+        ])
+        ? 1.0
+        : 0.0;
+    features['is_grain'] =
+        _containsAny(foodLower, [
+          'rice',
+          'bread',
+          'pasta',
+          'noodle',
+          'roti',
+          'chapati',
+          'biryani',
+          'pulao',
+        ])
+        ? 1.0
+        : 0.0;
+    features['is_bakery'] =
+        _containsAny(foodLower, [
+          'cake',
+          'pastry',
+          'cookie',
+          'biscuit',
+          'donut',
+          'muffin',
+          'bread',
+        ])
+        ? 1.0
+        : 0.0;
+    features['is_prepared'] =
+        _containsAny(foodLower, [
+          'curry',
+          'stew',
+          'soup',
+          'cooked',
+          'fried',
+          'pizza',
+          'burger',
+        ])
+        ? 1.0
+        : 0.0;
 
     // Temperature status encoding
     if (temperatureStatus == 'Hot/Freshly cooked') {
@@ -260,29 +340,29 @@ class _CreateListingPageState extends State<CreateListingPage> {
     final neurons = <String, double>{};
 
     // Neuron 1: Perishability score
-    neurons['perishability'] = 
-      features['is_dairy']! * 0.9 +
-      features['is_meat']! * 0.95 +
-      features['is_vegetable']! * 0.7 +
-      features['is_fruit']! * 0.6 +
-      features['is_grain']! * 0.3 +
-      features['is_bakery']! * 0.5 +
-      features['is_prepared']! * 0.7;
+    neurons['perishability'] =
+        features['is_dairy']! * 0.9 +
+        features['is_meat']! * 0.95 +
+        features['is_vegetable']! * 0.7 +
+        features['is_fruit']! * 0.6 +
+        features['is_grain']! * 0.3 +
+        features['is_bakery']! * 0.5 +
+        features['is_prepared']! * 0.7;
 
     // Neuron 2: Moisture content indicator
-    neurons['moisture'] = 
-      features['is_dairy']! * 0.8 +
-      features['is_meat']! * 0.75 +
-      features['is_vegetable']! * 0.9 +
-      features['is_fruit']! * 0.85 +
-      features['is_grain']! * 0.4 +
-      features['is_prepared']! * 0.6;
+    neurons['moisture'] =
+        features['is_dairy']! * 0.8 +
+        features['is_meat']! * 0.75 +
+        features['is_vegetable']! * 0.9 +
+        features['is_fruit']! * 0.85 +
+        features['is_grain']! * 0.4 +
+        features['is_prepared']! * 0.6;
 
     // Neuron 3: Protein content (affects bacterial growth)
-    neurons['protein'] = 
-      features['is_meat']! * 1.0 +
-      features['is_dairy']! * 0.7 +
-      features['is_grain']! * 0.3;
+    neurons['protein'] =
+        features['is_meat']! * 1.0 +
+        features['is_dairy']! * 0.7 +
+        features['is_grain']! * 0.3;
 
     // Apply activation function (ReLU)
     neurons.forEach((key, value) {
@@ -293,24 +373,27 @@ class _CreateListingPageState extends State<CreateListingPage> {
   }
 
   // Hidden Layer 2: Preservation factors processing
-  Map<String, double> _hiddenLayer2(Map<String, double> layer1, Map<String, double> features) {
+  Map<String, double> _hiddenLayer2(
+    Map<String, double> layer1,
+    Map<String, double> features,
+  ) {
     final neurons = <String, double>{};
 
     // Neuron 1: Storage quality score
-    neurons['storage_quality'] = 
-      features['temp_cold']! * 0.9 +
-      features['temp_ambient']! * 0.5 +
-      features['temp_hot']! * 0.2 +
-      features['pkg_sealed']! * 0.8 +
-      features['pkg_moderate']! * 0.6 +
-      features['pkg_open']! * 0.3;
+    neurons['storage_quality'] =
+        features['temp_cold']! * 0.9 +
+        features['temp_ambient']! * 0.5 +
+        features['temp_hot']! * 0.2 +
+        features['pkg_sealed']! * 0.8 +
+        features['pkg_moderate']! * 0.6 +
+        features['pkg_open']! * 0.3;
 
     // Neuron 2: Decay rate estimation
-    neurons['decay_rate'] = 
-      layer1['perishability']! * 0.7 +
-      layer1['moisture']! * 0.5 +
-      layer1['protein']! * 0.6 -
-      neurons['storage_quality']! * 0.4;
+    neurons['decay_rate'] =
+        layer1['perishability']! * 0.7 +
+        layer1['moisture']! * 0.5 +
+        layer1['protein']! * 0.6 -
+        neurons['storage_quality']! * 0.4;
 
     // Neuron 3: Freshness factor
     neurons['freshness_impact'] = features['freshness']! * 0.8;
@@ -331,17 +414,17 @@ class _CreateListingPageState extends State<CreateListingPage> {
     final freshnessImpact = layer2['freshness_impact']!;
 
     // Weighted combination for final prediction
-    final expiryScore = 
-      (1 - decayRate) * 7.0 +  // Base 7 days, reduced by decay
-      storageQuality * 5.0 +    // Good storage adds up to 5 days
-      freshnessImpact * 3.0;    // Freshness adds up to 3 days
+    final expiryScore =
+        (1 - decayRate) * 7.0 + // Base 7 days, reduced by decay
+        storageQuality * 5.0 + // Good storage adds up to 5 days
+        freshnessImpact * 3.0; // Freshness adds up to 3 days
 
     // Clamp to realistic range (1-14 days)
     final predictedDays = expiryScore.clamp(1.0, 14.0).round();
 
     // Calculate confidence based on feature completeness
     double confidence = 0.5; // Base confidence
-    
+
     // Increase confidence with more data
     if (layer2['storage_quality']! > 0.6) confidence += 0.15;
     if (layer2['decay_rate']! > 0.3) confidence += 0.15;
@@ -349,10 +432,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
 
     confidence = confidence.clamp(0.5, 0.95);
 
-    return {
-      'days': predictedDays,
-      'confidence': confidence,
-    };
+    return {'days': predictedDays, 'confidence': confidence};
   }
 
   // Helper widget for factor chips
@@ -362,18 +442,12 @@ class _CreateListingPageState extends State<CreateListingPage> {
       decoration: BoxDecoration(
         color: const Color(0xFFE07A3E).withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFFE07A3E).withOpacity(0.3),
-        ),
+        border: Border.all(color: const Color(0xFFE07A3E).withOpacity(0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.check_circle,
-            size: 12,
-            color: const Color(0xFFE07A3E),
-          ),
+          Icon(Icons.check_circle, size: 12, color: const Color(0xFFE07A3E)),
           const SizedBox(width: 4),
           Text(
             label,
@@ -908,7 +982,8 @@ class _CreateListingPageState extends State<CreateListingPage> {
                             ],
                           ),
                           const SizedBox(height: 12),
-                          if (_predictedExpiryDays == null && !_isLoadingPrediction)
+                          if (_predictedExpiryDays == null &&
+                              !_isLoadingPrediction)
                             ElevatedButton.icon(
                               onPressed: _foodTypeController.text.isNotEmpty
                                   ? _predictFoodExpiry
@@ -937,9 +1012,10 @@ class _CreateListingPageState extends State<CreateListingPage> {
                                       height: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(
-                                          Color(0xFFE07A3E),
-                                        ),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Color(0xFFE07A3E),
+                                            ),
                                       ),
                                     ),
                                     const SizedBox(width: 12),
@@ -963,7 +1039,8 @@ class _CreateListingPageState extends State<CreateListingPage> {
                                 ),
                               ],
                             ),
-                          if (_predictedExpiryDays != null && !_isLoadingPrediction)
+                          if (_predictedExpiryDays != null &&
+                              !_isLoadingPrediction)
                             Column(
                               children: [
                                 // Main prediction card
@@ -972,7 +1049,9 @@ class _CreateListingPageState extends State<CreateListingPage> {
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       colors: [
-                                        const Color(0xFFE07A3E).withOpacity(0.1),
+                                        const Color(
+                                          0xFFE07A3E,
+                                        ).withOpacity(0.1),
                                         Colors.white,
                                       ],
                                       begin: Alignment.topLeft,
@@ -980,7 +1059,9 @@ class _CreateListingPageState extends State<CreateListingPage> {
                                     ),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: const Color(0xFFE07A3E).withOpacity(0.3),
+                                      color: const Color(
+                                        0xFFE07A3E,
+                                      ).withOpacity(0.3),
                                       width: 2,
                                     ),
                                   ),
@@ -993,7 +1074,8 @@ class _CreateListingPageState extends State<CreateListingPage> {
                                             padding: const EdgeInsets.all(12),
                                             decoration: BoxDecoration(
                                               color: const Color(0xFFE07A3E),
-                                              borderRadius: BorderRadius.circular(12),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
                                             ),
                                             child: const Icon(
                                               Icons.schedule,
@@ -1005,7 +1087,8 @@ class _CreateListingPageState extends State<CreateListingPage> {
                                           // Prediction details
                                           Expanded(
                                             child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
                                               children: [
                                                 const Text(
                                                   'Predicted Shelf Life',
@@ -1017,25 +1100,35 @@ class _CreateListingPageState extends State<CreateListingPage> {
                                                 ),
                                                 const SizedBox(height: 4),
                                                 Row(
-                                                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                                                  textBaseline: TextBaseline.alphabetic,
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment
+                                                          .baseline,
+                                                  textBaseline:
+                                                      TextBaseline.alphabetic,
                                                   children: [
                                                     Text(
                                                       '$_predictedExpiryDays',
                                                       style: const TextStyle(
                                                         fontSize: 36,
-                                                        fontWeight: FontWeight.bold,
-                                                        color: Color(0xFFE07A3E),
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color: Color(
+                                                          0xFFE07A3E,
+                                                        ),
                                                         height: 1.0,
                                                       ),
                                                     ),
                                                     const SizedBox(width: 6),
                                                     Text(
-                                                      _predictedExpiryDays == 1 ? 'Day' : 'Days',
+                                                      _predictedExpiryDays == 1
+                                                          ? 'Day'
+                                                          : 'Days',
                                                       style: TextStyle(
                                                         fontSize: 16,
-                                                        fontWeight: FontWeight.w600,
-                                                        color: Colors.black.withOpacity(0.7),
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: Colors.black
+                                                            .withOpacity(0.7),
                                                       ),
                                                     ),
                                                   ],
@@ -1045,7 +1138,8 @@ class _CreateListingPageState extends State<CreateListingPage> {
                                                   'from preparation date',
                                                   style: TextStyle(
                                                     fontSize: 11,
-                                                    color: Colors.black.withOpacity(0.5),
+                                                    color: Colors.black
+                                                        .withOpacity(0.5),
                                                   ),
                                                 ),
                                               ],
@@ -1055,13 +1149,19 @@ class _CreateListingPageState extends State<CreateListingPage> {
                                           Container(
                                             decoration: BoxDecoration(
                                               color: Colors.white,
-                                              borderRadius: BorderRadius.circular(8),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                               border: Border.all(
-                                                color: const Color(0xFFE07A3E).withOpacity(0.3),
+                                                color: const Color(
+                                                  0xFFE07A3E,
+                                                ).withOpacity(0.3),
                                               ),
                                             ),
                                             child: IconButton(
-                                              icon: const Icon(Icons.refresh, size: 20),
+                                              icon: const Icon(
+                                                Icons.refresh,
+                                                size: 20,
+                                              ),
                                               color: const Color(0xFFE07A3E),
                                               onPressed: _predictFoodExpiry,
                                               tooltip: 'Recalculate',
@@ -1075,12 +1175,16 @@ class _CreateListingPageState extends State<CreateListingPage> {
                                         padding: const EdgeInsets.all(12),
                                         decoration: BoxDecoration(
                                           color: Colors.white,
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                         ),
                                         child: Column(
                                           children: [
                                             Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
                                               children: [
                                                 Row(
                                                   children: [
@@ -1094,7 +1198,8 @@ class _CreateListingPageState extends State<CreateListingPage> {
                                                       'Neural Network Confidence',
                                                       style: TextStyle(
                                                         fontSize: 12,
-                                                        fontWeight: FontWeight.w600,
+                                                        fontWeight:
+                                                            FontWeight.w600,
                                                         color: Colors.black87,
                                                       ),
                                                     ),
@@ -1112,17 +1217,26 @@ class _CreateListingPageState extends State<CreateListingPage> {
                                             ),
                                             const SizedBox(height: 8),
                                             ClipRRect(
-                                              borderRadius: BorderRadius.circular(4),
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
                                               child: LinearProgressIndicator(
                                                 value: _predictionConfidence,
-                                                backgroundColor: Colors.grey.shade200,
-                                                valueColor: AlwaysStoppedAnimation<Color>(
-                                                  _predictionConfidence! > 0.8
-                                                      ? Colors.green
-                                                      : _predictionConfidence! > 0.6
-                                                          ? const Color(0xFFE07A3E)
+                                                backgroundColor:
+                                                    Colors.grey.shade200,
+                                                valueColor:
+                                                    AlwaysStoppedAnimation<
+                                                      Color
+                                                    >(
+                                                      _predictionConfidence! >
+                                                              0.8
+                                                          ? Colors.green
+                                                          : _predictionConfidence! >
+                                                                0.6
+                                                          ? const Color(
+                                                              0xFFE07A3E,
+                                                            )
                                                           : Colors.orange,
-                                                ),
+                                                    ),
                                                 minHeight: 6,
                                               ),
                                             ),
@@ -1144,7 +1258,8 @@ class _CreateListingPageState extends State<CreateListingPage> {
                                     ),
                                   ),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: [
@@ -1170,7 +1285,8 @@ class _CreateListingPageState extends State<CreateListingPage> {
                                         runSpacing: 6,
                                         children: [
                                           _buildFactorChip('Food Category'),
-                                          if (_selectedTemperatureStatus != null)
+                                          if (_selectedTemperatureStatus !=
+                                              null)
                                             _buildFactorChip('Temperature'),
                                           if (_selectedPackagingType != null)
                                             _buildFactorChip('Packaging'),
@@ -1616,112 +1732,147 @@ class _CreateListingPageState extends State<CreateListingPage> {
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: _isSubmitting ? null : () async {
-                          if (_formKey.currentState!.validate()) {
-                            if (_imageFile == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Please upload a food image'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                              return;
-                            }
-                            if (_datePrepared == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Please select date prepared'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                              return;
-                            }
-                            if (_pickupTime == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Please select pickup time'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                              return;
-                            }
-
-                            // Set loading state
-                            setState(() {
-                              _isSubmitting = true;
-                            });
-
-                            try {
-                              // Format date and time
-                              String formattedDate = DateFormat('yyyy-MM-dd').format(_datePrepared!);
-                              String formattedTime = '${_pickupTime!.hour.toString().padLeft(2, '0')}:${_pickupTime!.minute.toString().padLeft(2, '0')}';
-                              
-                              // Parse amount if paid donation
-                              double amount = 0;
-                              if (_isPaidDonation && _amountController.text.isNotEmpty) {
-                                amount = double.tryParse(_amountController.text) ?? 0;
-                              }
-
-                              // Submit listing to backend
-                              final result = await _listingService.createListing(
-                                foodType: _foodTypeController.text,
-                                quantity: _quantityController.text,
-                                dietaryTag: _selectedDietaryTag!,
-                                temperatureStatus: _selectedTemperatureStatus!,
-                                location: _locationController.text,
-                                packagingType: _selectedPackagingType!,
-                                description: _descriptionController.text,
-                                datePrepared: formattedDate,
-                                pickupTime: formattedTime,
-                                isPaidDonation: _isPaidDonation,
-                                amount: amount,
-                                imageUrl: _imageFile!.path, // TODO: Upload image to server
-                              );
-
-                              setState(() {
-                                _isSubmitting = false;
-                              });
-
-                              if (result['success']) {
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        widget.isEditing
-                                            ? 'Listing updated successfully!'
-                                            : 'Listing created successfully!',
+                        onPressed: _isSubmitting
+                            ? null
+                            : () async {
+                                if (_formKey.currentState!.validate()) {
+                                  if (_imageFile == null) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Please upload a food image',
+                                        ),
+                                        backgroundColor: Colors.red,
                                       ),
-                                      backgroundColor: Colors.green,
-                                    ),
-                                  );
-                                  Navigator.pop(context, true); // Return true to indicate success
+                                    );
+                                    return;
+                                  }
+                                  if (_datePrepared == null) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Please select date prepared',
+                                        ),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  if (_pickupTime == null) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Please select pickup time',
+                                        ),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                    return;
+                                  }
+
+                                  // Set loading state
+                                  setState(() {
+                                    _isSubmitting = true;
+                                  });
+
+                                  try {
+                                    // Format date and time
+                                    String formattedDate = DateFormat(
+                                      'yyyy-MM-dd',
+                                    ).format(_datePrepared!);
+                                    String formattedTime =
+                                        '${_pickupTime!.hour.toString().padLeft(2, '0')}:${_pickupTime!.minute.toString().padLeft(2, '0')}';
+
+                                    // Parse amount if paid donation
+                                    double amount = 0;
+                                    if (_isPaidDonation &&
+                                        _amountController.text.isNotEmpty) {
+                                      amount =
+                                          double.tryParse(
+                                            _amountController.text,
+                                          ) ??
+                                          0;
+                                    }
+
+                                    // Submit listing to backend
+                                    final result = await _listingService
+                                        .createListing(
+                                          foodType: _foodTypeController.text,
+                                          quantity: _quantityController.text,
+                                          dietaryTag: _selectedDietaryTag!,
+                                          temperatureStatus:
+                                              _selectedTemperatureStatus!,
+                                          location: _locationController.text,
+                                          packagingType:
+                                              _selectedPackagingType!,
+                                          description:
+                                              _descriptionController.text,
+                                          datePrepared: formattedDate,
+                                          pickupTime: formattedTime,
+                                          isPaidDonation: _isPaidDonation,
+                                          amount: amount,
+                                          imageUrl: _imageFile!
+                                              .path, // TODO: Upload image to server
+                                        );
+
+                                    setState(() {
+                                      _isSubmitting = false;
+                                    });
+
+                                    if (result['success']) {
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              widget.isEditing
+                                                  ? 'Listing updated successfully!'
+                                                  : 'Listing created successfully!',
+                                            ),
+                                            backgroundColor: Colors.green,
+                                          ),
+                                        );
+                                        Navigator.pop(
+                                          context,
+                                          true,
+                                        ); // Return true to indicate success
+                                      }
+                                    } else {
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              result['message'] ??
+                                                  'Failed to create listing',
+                                            ),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  } catch (e) {
+                                    setState(() {
+                                      _isSubmitting = false;
+                                    });
+
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Error: ${e.toString()}',
+                                          ),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
+                                  }
                                 }
-                              } else {
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(result['message'] ?? 'Failed to create listing'),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                }
-                              }
-                            } catch (e) {
-                              setState(() {
-                                _isSubmitting = false;
-                              });
-                              
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Error: ${e.toString()}'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
-                            }
-                          }
-                        },
+                              },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFE07A3E),
                           shape: RoundedRectangleBorder(

@@ -1,10 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
 import '../main.dart';
 import '../widgets/common_footer.dart';
 import 'how_it_works_page.dart';
-import 'redeem_points_page.dart';
 import 'change_password_page.dart';
 import 'settings_page.dart';
 import 'create_requirements_page.dart';
@@ -297,25 +298,20 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
               ),
               title: Text(widget.user.fullName),
               subtitle: Text(widget.user.email),
+              trailing: IconButton(
+                icon: const Icon(
+                  Icons.edit,
+                  color: Color(0xFFE07A3E),
+                  size: 20,
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  _showEditProfileDialog(context);
+                },
+                tooltip: 'Edit Profile',
+              ),
             ),
             const Divider(),
-            ListTile(
-              leading: const Icon(
-                Icons.card_giftcard,
-                color: Color(0xFFE07A3E),
-              ),
-              title: const Text('Redeem Points'),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => RedeemPointsPage(user: widget.user),
-                  ),
-                );
-              },
-            ),
             ListTile(
               leading: const Icon(Icons.lock_outline, color: Color(0xFFE07A3E)),
               title: const Text('Change Password'),
@@ -397,6 +393,235 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
               },
             ),
             const SizedBox(height: 10),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditProfileDialog(BuildContext context) {
+    final TextEditingController nameController = TextEditingController(
+      text: widget.user.fullName,
+    );
+    final TextEditingController emailController = TextEditingController(
+      text: widget.user.email,
+    );
+    File? selectedImage;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            'Edit Profile',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Profile Picture Section
+                GestureDetector(
+                  onTap: () async {
+                    final ImagePicker picker = ImagePicker();
+                    showModalBottomSheet(
+                      context: context,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(20),
+                        ),
+                      ),
+                      builder: (context) => Container(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text(
+                              'Choose Profile Picture',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            ListTile(
+                              leading: const Icon(
+                                Icons.camera_alt,
+                                color: Color(0xFFE07A3E),
+                              ),
+                              title: const Text('Camera'),
+                              onTap: () async {
+                                Navigator.pop(context);
+                                final XFile? pickedFile = await picker
+                                    .pickImage(
+                                      source: ImageSource.camera,
+                                      maxWidth: 1800,
+                                      maxHeight: 1800,
+                                      imageQuality: 85,
+                                    );
+                                if (pickedFile != null) {
+                                  setDialogState(() {
+                                    selectedImage = File(pickedFile.path);
+                                  });
+                                }
+                              },
+                            ),
+                            ListTile(
+                              leading: const Icon(
+                                Icons.photo_library,
+                                color: Color(0xFFE07A3E),
+                              ),
+                              title: const Text('Gallery'),
+                              onTap: () async {
+                                Navigator.pop(context);
+                                final XFile? pickedFile = await picker
+                                    .pickImage(
+                                      source: ImageSource.gallery,
+                                      maxWidth: 1800,
+                                      maxHeight: 1800,
+                                      imageQuality: 85,
+                                    );
+                                if (pickedFile != null) {
+                                  setDialogState(() {
+                                    selectedImage = File(pickedFile.path);
+                                  });
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                  child: Stack(
+                    children: [
+                      Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.grey.shade200,
+                          image: selectedImage != null
+                              ? DecorationImage(
+                                  image: FileImage(selectedImage!),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
+                        ),
+                        child: selectedImage == null
+                            ? Image.asset(
+                                'assets/images/profile.png',
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Icon(
+                                    Icons.person,
+                                    size: 50,
+                                    color: Colors.grey,
+                                  );
+                                },
+                              )
+                            : null,
+                      ),
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFE07A3E),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.camera_alt,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                // Name Field
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: 'Name',
+                    prefixIcon: const Icon(
+                      Icons.person_outline,
+                      color: Color(0xFFE07A3E),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFE07A3E),
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Email Field
+                TextField(
+                  controller: emailController,
+                  decoration: InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: const Icon(
+                      Icons.email_outlined,
+                      color: Color(0xFFE07A3E),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFE07A3E),
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                // TODO: Implement profile update logic
+                // Update user data with nameController.text, emailController.text, and selectedImage
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Profile updated successfully!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE07A3E),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+              ),
+              child: const Text('Save Changes'),
+            ),
           ],
         ),
       ),

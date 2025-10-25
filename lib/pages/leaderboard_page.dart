@@ -11,16 +11,22 @@ class LeaderboardPage extends StatefulWidget {
 }
 
 class _LeaderboardPageState extends State<LeaderboardPage> {
-  // Sample leaderboard data
+  // Sample leaderboard data with ratings out of 5
   final List<Map<String, dynamic>> _leaderboardData = [
-    {'name': 'Aditya', 'points': 142, 'rank': 1, 'trend': 'up'},
-    {'name': 'Palash', 'points': 100, 'rank': 2, 'trend': 'up'},
-    {'name': 'Ankit', 'points': 99, 'rank': 3, 'trend': 'up'},
-    {'name': 'Anuish', 'points': 95, 'rank': 4, 'trend': 'down'},
-    {'name': 'Rahul', 'points': 87, 'rank': 5, 'trend': 'up'},
-    {'name': 'Priya', 'points': 82, 'rank': 6, 'trend': 'down'},
-    {'name': 'Sneha', 'points': 78, 'rank': 7, 'trend': 'up'},
-    {'name': 'Rohan', 'points': 71, 'rank': 8, 'trend': 'up'},
+    {'name': 'Aditya', 'rating': 4.9, 'rank': 1, 'trend': 'up', 'reviews': 45},
+    {'name': 'Palash', 'rating': 4.8, 'rank': 2, 'trend': 'up', 'reviews': 38},
+    {'name': 'Ankit', 'rating': 4.7, 'rank': 3, 'trend': 'up', 'reviews': 42},
+    {
+      'name': 'Anuish',
+      'rating': 4.6,
+      'rank': 4,
+      'trend': 'down',
+      'reviews': 35,
+    },
+    {'name': 'Rahul', 'rating': 4.5, 'rank': 5, 'trend': 'up', 'reviews': 30},
+    {'name': 'Priya', 'rating': 4.4, 'rank': 6, 'trend': 'down', 'reviews': 28},
+    {'name': 'Sneha', 'rating': 4.3, 'rank': 7, 'trend': 'up', 'reviews': 25},
+    {'name': 'Rohan', 'rating': 4.2, 'rank': 8, 'trend': 'up', 'reviews': 22},
   ];
 
   Color _getPodiumColor(int rank) {
@@ -78,21 +84,24 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                   _buildPodiumItem(
                     rank: 2,
                     name: _leaderboardData[1]['name'],
-                    points: _leaderboardData[1]['points'],
+                    rating: _leaderboardData[1]['rating'],
+                    reviews: _leaderboardData[1]['reviews'],
                     height: 90,
                   ),
                   // 1st Place
                   _buildPodiumItem(
                     rank: 1,
                     name: _leaderboardData[0]['name'],
-                    points: _leaderboardData[0]['points'],
+                    rating: _leaderboardData[0]['rating'],
+                    reviews: _leaderboardData[0]['reviews'],
                     height: 135,
                   ),
                   // 3rd Place
                   _buildPodiumItem(
                     rank: 3,
                     name: _leaderboardData[2]['name'],
-                    points: _leaderboardData[2]['points'],
+                    rating: _leaderboardData[2]['rating'],
+                    reviews: _leaderboardData[2]['reviews'],
                     height: 70,
                   ),
                 ],
@@ -137,7 +146,8 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                         return _buildLeaderboardItem(
                           rank: item['rank'],
                           name: item['name'],
-                          points: item['points'],
+                          rating: item['rating'],
+                          reviews: item['reviews'],
                           trend: item['trend'],
                         );
                       },
@@ -155,7 +165,8 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
   Widget _buildPodiumItem({
     required int rank,
     required String name,
-    required int points,
+    required double rating,
+    required int reviews,
     required double height,
   }) {
     return Expanded(
@@ -169,18 +180,18 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                 // Crown for 1st place
                 if (rank == 1)
                   const Padding(
-                    padding: EdgeInsets.only(bottom: 4),
+                    padding: EdgeInsets.only(bottom: 2),
                     child: Icon(
                       Icons.emoji_events,
                       color: Color(0xFFFFD700),
-                      size: 26,
+                      size: 22,
                     ),
                   ),
-                // Name and points badge
+                // Name and rating badge
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 5,
+                    horizontal: 5,
+                    vertical: 4,
                   ),
                   decoration: BoxDecoration(
                     color: _getPodiumColor(rank),
@@ -194,21 +205,36 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: 11,
+                          fontSize: 10,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.star, color: Colors.white, size: 9),
+                          const SizedBox(width: 2),
+                          Text(
+                            rating.toStringAsFixed(1),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
                       Text(
-                        '$points Pts',
+                        '($reviews)',
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 9,
+                          fontSize: 7,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 // Podium
                 Container(
                   width: double.infinity,
@@ -242,7 +268,8 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
   Widget _buildLeaderboardItem({
     required int rank,
     required String name,
-    required int points,
+    required double rating,
+    required int reviews,
     required String trend,
   }) {
     return Container(
@@ -278,14 +305,30 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ),
-          // Points
-          Text(
-            '$points',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFFE07A3E),
-            ),
+          // Rating and reviews
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.star, color: Color(0xFFE07A3E), size: 18),
+                  const SizedBox(width: 4),
+                  Text(
+                    rating.toStringAsFixed(1),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFE07A3E),
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                '$reviews reviews',
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+              ),
+            ],
           ),
         ],
       ),
