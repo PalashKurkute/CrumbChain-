@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/common_footer.dart';
 import '../models/user.dart';
+import '../services/order_service.dart';
 
 class OrderHistoryPage extends StatefulWidget {
   final User? user;
@@ -14,17 +15,53 @@ class OrderHistoryPage extends StatefulWidget {
 class _OrderHistoryPageState extends State<OrderHistoryPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final OrderService _orderService = OrderService();
+  
+  List<dynamic> _donatedOrders = [];
+  List<dynamic> _receivedOrders = [];
+  bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _loadOrders();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadOrders() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final response = await _orderService.getMyOrders();
+      
+      if (response['success']) {
+        setState(() {
+          _donatedOrders = response['data']['donatedOrders'] ?? [];
+          _receivedOrders = response['data']['receivedOrders'] ?? [];
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _errorMessage = response['message'];
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to load orders: $e';
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -147,14 +184,42 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
 
           // Tab Bar View
           Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildAcceptedTab(),
-                _buildPendingTab(),
-                _buildCompletedTab(),
-              ],
-            ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF20B2AA)),
+                  ))
+                : _errorMessage != null
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.error_outline, size: 48, color: Colors.grey.shade400),
+                            const SizedBox(height: 16),
+                            Text(
+                              _errorMessage!,
+                              style: TextStyle(color: Colors.grey.shade600),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: _loadOrders,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF20B2AA),
+                                foregroundColor: Colors.white,
+                              ),
+                              child: const Text('Retry'),
+                            ),
+                          ],
+                        ),
+                      )
+                    : TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _buildAcceptedTab(),
+                          _buildPendingTab(),
+                          _buildCompletedTab(),
+                        ],
+                      ),
           ),
         ],
       ),
@@ -162,148 +227,122 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
     );
   }
 
-  // Accepted Requirements Tab
+  // Accepted Requirements Tab (Approved and In Transit)
   Widget _buildAcceptedTab() {
+    final acceptedOrders = _receivedOrders.where((order) {
+      final status = order['orderStatus'] ?? '';
+      return status == 'approved' || status == 'in_transit' || status == 'out_for_delivery';
+    }).toList();
+
+    if (acceptedOrders.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.inbox_outlined, size: 64, color: Colors.grey.shade300),
+            const SizedBox(height: 16),
+            Text(
+              'No accepted orders',
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+      );
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
-        children: [
-          _buildAcceptedCard(
-            donorName: 'Restaurant ABC',
-            itemName: 'Mixed Vegetables',
-            quantity: '15 kg',
-            acceptedDate: 'Jan 20, 2025',
-            estimatedDelivery: 'Jan 21, 2025',
-            status: 'Preparing',
-          ),
-          const SizedBox(height: 12),
-          _buildAcceptedCard(
-            donorName: 'Hotel Grand',
-            itemName: 'Rice & Dal',
-            quantity: '20 kg',
-            acceptedDate: 'Jan 19, 2025',
-            estimatedDelivery: 'Jan 20, 2025',
-            status: 'Ready for Pickup',
-          ),
-          const SizedBox(height: 12),
-          _buildAcceptedCard(
-            donorName: 'Bakery Fresh',
-            itemName: 'Bread & Pastries',
-            quantity: '50 items',
-            acceptedDate: 'Jan 18, 2025',
-            estimatedDelivery: 'Jan 19, 2025',
-            status: 'In Transit',
-          ),
-        ],
+        children: acceptedOrders.map((order) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _buildAcceptedCard(order),
+          );
+        }).toList(),
       ),
     );
   }
 
-  // Pending Orders Tab
+  // Pending Orders Tab (Pending Approval)
   Widget _buildPendingTab() {
+    final pendingOrders = _receivedOrders.where((order) {
+      return order['orderStatus'] == 'pending_approval';
+    }).toList();
+
+    if (pendingOrders.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.hourglass_empty, size: 64, color: Colors.grey.shade300),
+            const SizedBox(height: 16),
+            Text(
+              'No pending orders',
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+      );
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
-        children: [
-          _buildPendingCard(
-            itemName: 'Fruits & Vegetables',
-            requestedDate: 'Jan 22, 2025',
-            quantity: '30 kg',
-            urgency: 'High',
-          ),
-          const SizedBox(height: 12),
-          _buildPendingCard(
-            itemName: 'Dry Groceries',
-            requestedDate: 'Jan 21, 2025',
-            quantity: '25 kg',
-            urgency: 'Medium',
-          ),
-          const SizedBox(height: 12),
-          _buildPendingCard(
-            itemName: 'Cooked Meals',
-            requestedDate: 'Jan 20, 2025',
-            quantity: '40 servings',
-            urgency: 'Low',
-          ),
-        ],
+        children: pendingOrders.map((order) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _buildPendingCard(order),
+          );
+        }).toList(),
       ),
     );
   }
 
   // Completed Orders Tab
   Widget _buildCompletedTab() {
+    final completedOrders = _receivedOrders.where((order) {
+      return order['orderStatus'] == 'delivered' || order['orderStatus'] == 'completed';
+    }).toList();
+
+    if (completedOrders.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.check_circle_outline, size: 64, color: Colors.grey.shade300),
+            const SizedBox(height: 16),
+            Text(
+              'No completed orders',
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+      );
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
-        children: [
-          _buildCompletedCard(
-            donorName: 'Cafe Delight',
-            itemName: 'Sandwiches & Snacks',
-            quantity: '40 items',
-            deliveredDate: 'Jan 15, 2025',
-            beneficiaries: 35,
-            rating: 4.8,
-          ),
-          const SizedBox(height: 12),
-          _buildCompletedCard(
-            donorName: 'Restaurant XYZ',
-            itemName: 'Biryani',
-            quantity: '25 kg',
-            deliveredDate: 'Jan 12, 2025',
-            beneficiaries: 50,
-            rating: 4.9,
-          ),
-          const SizedBox(height: 12),
-          _buildCompletedCard(
-            donorName: 'Grocery Mart',
-            itemName: 'Fresh Produce',
-            quantity: '35 kg',
-            deliveredDate: 'Jan 10, 2025',
-            beneficiaries: 45,
-            rating: 4.7,
-          ),
-          const SizedBox(height: 12),
-          _buildCompletedCard(
-            donorName: 'Hotel Paradise',
-            itemName: 'Dal & Chapati',
-            quantity: '30 kg',
-            deliveredDate: 'Jan 5, 2025',
-            beneficiaries: 60,
-            rating: 4.6,
-          ),
-        ],
+        children: completedOrders.map((order) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _buildCompletedCard(order),
+          );
+        }).toList(),
       ),
     );
   }
 
-  Widget _buildAcceptedCard({
-    required String donorName,
-    required String itemName,
-    required String quantity,
-    required String acceptedDate,
-    required String estimatedDelivery,
-    required String status,
-  }) {
-    Color statusColor;
-    IconData statusIcon;
-
-    switch (status) {
-      case 'Preparing':
-        statusColor = Colors.orange;
-        statusIcon = Icons.restaurant;
-        break;
-      case 'Ready for Pickup':
-        statusColor = const Color(0xFF20B2AA);
-        statusIcon = Icons.check_circle_outline;
-        break;
-      case 'In Transit':
-        statusColor = Colors.blue;
-        statusIcon = Icons.local_shipping;
-        break;
-      default:
-        statusColor = Colors.grey;
-        statusIcon = Icons.info;
-    }
+  Widget _buildAcceptedCard(dynamic order) {
+    final String itemName = order['mealType'] ?? 'Food Item';
+    final String donorName = order['userName'] ?? 'Anonymous Donor';
+    final String quantity = order['quantity'] ?? 'N/A';
+    final String status = order['orderStatus'] ?? 'unknown';
+    final String acceptedDate = _formatDate(order['claimedAt']);
+    
+    final String statusDisplay = OrderService.getStatusDisplayName(status);
+    final Color statusColor = Color(OrderService.getStatusColor(status));
+    final String statusIcon = OrderService.getStatusIcon(status);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -367,10 +406,10 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(statusIcon, size: 14, color: statusColor),
+                    Text(statusIcon, style: const TextStyle(fontSize: 14)),
                     const SizedBox(width: 4),
                     Text(
-                      status,
+                      statusDisplay,
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -403,153 +442,232 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Icon(Icons.local_shipping, size: 16, color: Colors.grey.shade600),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  'Est. Delivery: $estimatedDelivery',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w500,
+          if (order['pickupLocation'] != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.location_on, size: 16, color: Colors.grey.shade600),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    order['pickupLocation'],
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey.shade600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildPendingCard({
-    required String itemName,
-    required String requestedDate,
-    required String quantity,
-    required String urgency,
-  }) {
-    Color urgencyColor;
-    switch (urgency) {
-      case 'High':
+  Widget _buildPendingCard(dynamic order) {
+    final String itemName = order['mealType'] ?? order['foodType'] ?? 'Food Item';
+    final String donorName = order['userName'] ?? 'Anonymous Donor';
+    final String quantity = order['quantity'] ?? 'N/A';
+    final String requestedDate = _formatDate(order['claimedAt']);
+    final String listingId = order['_id'] ?? '';
+    
+    // Determine urgency based on meal type or other factors
+    String urgency = 'Medium';
+    Color urgencyColor = Colors.orange;
+    
+    if (order['mealType'] != null || order['foodType'] != null) {
+      final foodItem = (order['mealType'] ?? order['foodType'] ?? '').toLowerCase();
+      if (foodItem.contains('perishable') || foodItem.contains('fresh')) {
+        urgency = 'High';
         urgencyColor = Colors.red;
-        break;
-      case 'Medium':
-        urgencyColor = Colors.orange;
-        break;
-      case 'Low':
+      } else {
+        urgency = 'Low';
         urgencyColor = Colors.green;
-        break;
-      default:
-        urgencyColor = Colors.grey;
+      }
     }
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFCEEDD),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  itemName,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
+    return Dismissible(
+      key: Key(listingId),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (direction) async {
+        return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Delete Order'),
+            content: const Text('Are you sure you want to delete this pending order? This cannot be undone.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
               ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
+        );
+      },
+      onDismissed: (direction) async {
+        await _deleteOrder(listingId);
+      },
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        decoration: BoxDecoration(
+          color: Colors.red,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Icon(Icons.delete, color: Colors.white, size: 32),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFCEEDD),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        itemName,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.person,
+                              size: 14, color: Color(0xFFE07A3E)),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              'Donor: $donorName',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Color(0xFFE07A3E),
+                                fontWeight: FontWeight.w500,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-                decoration: BoxDecoration(
-                  color: urgencyColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: urgencyColor),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: urgencyColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: urgencyColor),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.priority_high, size: 14, color: urgencyColor),
+                      const SizedBox(width: 4),
+                      Text(
+                        urgency,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: urgencyColor,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(Icons.scale, size: 16, color: Colors.grey.shade600),
+                const SizedBox(width: 4),
+                Text(
+                  quantity,
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                ),
+                const SizedBox(width: 16),
+                Icon(Icons.calendar_today, size: 16, color: Colors.grey.shade600),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    'Requested: $requestedDate',
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
                   children: [
-                    Icon(Icons.priority_high, size: 14, color: urgencyColor),
+                    Icon(Icons.pending_actions,
+                        size: 16, color: Colors.grey.shade600),
                     const SizedBox(width: 4),
                     Text(
-                      urgency,
+                      'Waiting for donor approval',
                       style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: urgencyColor,
+                        fontSize: 13,
+                        color: Colors.grey.shade600,
+                        fontStyle: FontStyle.italic,
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Icon(Icons.scale, size: 16, color: Colors.grey.shade600),
-              const SizedBox(width: 4),
-              Text(
-                quantity,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-              ),
-              const SizedBox(width: 16),
-              Icon(Icons.calendar_today, size: 16, color: Colors.grey.shade600),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  'Requested: $requestedDate',
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-                  overflow: TextOverflow.ellipsis,
+                Icon(
+                  Icons.arrow_back,
+                  size: 16,
+                  color: Colors.red.shade400,
                 ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Swipe left to delete',
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey.shade500,
+                fontStyle: FontStyle.italic,
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Icon(Icons.pending_actions,
-                  size: 16, color: Colors.grey.shade600),
-              const SizedBox(width: 4),
-              Text(
-                'Waiting for donor acceptance',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey.shade600,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildCompletedCard({
-    required String donorName,
-    required String itemName,
-    required String quantity,
-    required String deliveredDate,
-    required int beneficiaries,
-    required double rating,
-  }) {
+  Widget _buildCompletedCard(dynamic order) {
+    final String itemName = order['mealType'] ?? 'Food Item';
+    final String donorName = order['userName'] ?? 'Anonymous Donor';
+    final String quantity = order['quantity'] ?? 'N/A';
+    final String deliveredDate = _formatDate(order['deliveredAt'] ?? order['completedAt']);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -625,9 +743,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
           ),
           const SizedBox(height: 12),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Beneficiaries badge
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
@@ -641,42 +757,15 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.people,
+                    const Icon(Icons.check_circle,
                         size: 16, color: Color(0xFF20B2AA)),
                     const SizedBox(width: 4),
                     Text(
-                      '$beneficiaries served',
+                      order['orderStatus'] == 'completed' ? 'Completed' : 'Delivered',
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: Color(0xFF20B2AA),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Rating badge
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE07A3E).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFE07A3E)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.star, size: 16, color: Color(0xFFE07A3E)),
-                    const SizedBox(width: 4),
-                    Text(
-                      rating.toString(),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFFE07A3E),
                       ),
                     ),
                   ],
@@ -687,5 +776,72 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
         ],
       ),
     );
+  }
+
+  Future<void> _deleteOrder(String orderId) async {
+    try {
+      final response = await _orderService.deleteOrder(orderId);
+      
+      if (response['success']) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Order deleted successfully'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        
+        // Refresh the orders list
+        await _loadOrders();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete order: ${response['message']}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error deleting order: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  String _formatDate(dynamic dateValue) {
+    if (dateValue == null) return 'N/A';
+    
+    try {
+      DateTime date;
+      if (dateValue is String) {
+        date = DateTime.parse(dateValue);
+      } else if (dateValue is DateTime) {
+        date = dateValue;
+      } else {
+        return 'N/A';
+      }
+      
+      final now = DateTime.now();
+      final difference = now.difference(date);
+      
+      if (difference.inDays == 0) {
+        return 'Today';
+      } else if (difference.inDays == 1) {
+        return 'Yesterday';
+      } else if (difference.inDays < 7) {
+        return '${difference.inDays} days ago';
+      } else {
+        final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return '${months[date.month - 1]} ${date.day}, ${date.year}';
+      }
+    } catch (e) {
+      return 'N/A';
+    }
   }
 }

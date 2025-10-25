@@ -13,6 +13,13 @@ class ListingHistoryPage extends StatefulWidget {
 
 class _ListingHistoryPageState extends State<ListingHistoryPage> {
   @override
+  void initState() {
+    super.initState();
+    // Note: Completed listings are automatically deleted from the database
+    // This page now shows a message explaining this
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
@@ -101,175 +108,145 @@ class _ListingHistoryPageState extends State<ListingHistoryPage> {
 
             const SizedBox(height: 24),
 
-            // Body Content - Past Listings
+            // Body Content - Explanation Message
             Padding(
               padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  _buildHistoryCard(
-                    title: 'Dal and Chapati',
-                    date: 'Jan 15, 2025',
-                    servings: '15 people',
-                    impact: '12 kg CO₂ saved',
-                    pointsEarned: 25,
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  _buildHistoryCard(
-                    title: 'Biryani',
-                    date: 'Jan 10, 2025',
-                    servings: '25 people',
-                    impact: '20 kg CO₂ saved',
-                    pointsEarned: 35,
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  _buildHistoryCard(
-                    title: 'Mixed Vegetables',
-                    date: 'Jan 5, 2025',
-                    servings: '10 people',
-                    impact: '8 kg CO₂ saved',
-                    pointsEarned: 18,
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  _buildHistoryCard(
-                    title: 'Fruit Basket',
-                    date: 'Dec 28, 2024',
-                    servings: '8 people',
-                    impact: '5 kg CO₂ saved',
-                    pointsEarned: 15,
-                  ),
-                ],
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.auto_delete_outlined,
+                      size: 80,
+                      color: Colors.grey.shade400,
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Auto-Cleanup Enabled',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.blue.shade200),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            size: 32,
+                            color: Colors.blue.shade700,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Completed listings are automatically removed from the database to keep your workspace clean and efficient.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade700,
+                              height: 1.5,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.check_circle,
+                                      size: 18,
+                                      color: Colors.green.shade600,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Active listings: Available in Listing Tracker',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.grey.shade800,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.notifications_active,
+                                      size: 18,
+                                      color: Colors.orange.shade600,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Order updates: Check Notifications tab',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.grey.shade800,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.delete_sweep,
+                                      size: 18,
+                                      color: Colors.red.shade600,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Completed orders: Auto-deleted after completion',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.grey.shade800,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Your impact statistics and notifications are preserved!',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade600,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
         ),
       ),
       bottomNavigationBar: CommonFooter(user: widget.user),
-    );
-  }
-
-  Widget _buildHistoryCard({
-    required String title,
-    required String date,
-    required String servings,
-    required String impact,
-    required int pointsEarned,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFCEEDD),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Icon(Icons.check_circle, color: Colors.green, size: 24),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Icon(Icons.calendar_today, size: 16, color: Colors.grey.shade600),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  date,
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Icon(Icons.people, size: 16, color: Colors.grey.shade600),
-              const SizedBox(width: 4),
-              Text(
-                servings,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Points earned badge (Bottom Left)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE07A3E).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFE07A3E)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.stars, size: 16, color: Color(0xFFE07A3E)),
-                    const SizedBox(width: 4),
-                    Text(
-                      '+$pointsEarned pts',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFFE07A3E),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Impact badge (Bottom Right)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.eco, size: 16, color: Colors.green),
-                    const SizedBox(width: 4),
-                    Text(
-                      impact,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.green,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 }

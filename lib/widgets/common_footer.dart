@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../pages/ai_chatbot_page.dart';
+import '../pages/notifications_page.dart';
 import '../models/user.dart';
 import '../pages/donor_home_page.dart';
 import '../pages/receiver_home_page.dart';
@@ -39,11 +40,11 @@ class CommonFooter extends StatelessWidget {
                 label: 'Notifications',
                 isSelected: selectedIndex == 0,
                 onTap: () {
-                  // Navigate to notifications page or show notifications
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Notifications coming soon!'),
-                      duration: Duration(seconds: 1),
+                  // Navigate to notifications page
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => NotificationsPage(user: user),
                     ),
                   );
                 },

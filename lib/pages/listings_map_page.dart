@@ -6,6 +6,7 @@ import 'package:geocoding/geocoding.dart';
 import '../models/user.dart';
 import '../models/listing.dart';
 import '../services/listing_service.dart';
+import '../services/order_service.dart';
 import '../widgets/common_footer.dart';
 
 class ListingsMapPage extends StatefulWidget {
@@ -31,6 +32,7 @@ class ListingWithDistance {
 
 class _ListingsMapPageState extends State<ListingsMapPage> {
   final ListingService _listingService = ListingService();
+  final OrderService _orderService = OrderService();
   final MapController _mapController = MapController();
   
   List<ListingWithDistance> _listingsWithDistance = [];
@@ -545,20 +547,47 @@ class _ListingsMapPageState extends State<ListingsMapPage> {
                       Expanded(
                         flex: 2,
                         child: ElevatedButton.icon(
-                          onPressed: () {
-                            // TODO: Implement claim functionality
+                          onPressed: () async {
                             Navigator.pop(context);
+                            
+                            // Show loading indicator
+                            if (!mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text('Claiming "${listing.foodType}"...'),
                                 backgroundColor: const Color(0xFF20B2AA),
-                                action: SnackBarAction(
-                                  label: 'OK',
-                                  textColor: Colors.white,
-                                  onPressed: () {},
-                                ),
+                                duration: const Duration(seconds: 2),
                               ),
                             );
+                            
+                            // Claim the listing
+                            final response = await _orderService.claimListing(listing.id);
+                            
+                            if (!mounted) return;
+                            if (response['success']) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text('Listing claimed successfully! Waiting for donor approval.'),
+                                  backgroundColor: Colors.green,
+                                  action: SnackBarAction(
+                                    label: 'View Orders',
+                                    textColor: Colors.white,
+                                    onPressed: () {
+                                      // Navigate to order history
+                                    },
+                                  ),
+                                ),
+                              );
+                              // Refresh listings to show updated status
+                              _fetchListings();
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(response['message'] ?? 'Failed to claim listing'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
                           },
                           icon: const Icon(Icons.check_circle_outline, size: 22),
                           label: const Text('Claim Listing', style: TextStyle(fontSize: 16)),

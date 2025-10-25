@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../widgets/common_footer.dart';
 import '../models/user.dart';
+import '../services/order_service.dart';
 
-/// Live Order Tracker for Receivers - Clean and Compact Design
+/// Live Order Tracker for Receivers - Real-time tracking with backend data
 class LiveOrderTrackerPage extends StatefulWidget {
   final User? user;
 
@@ -13,6 +15,190 @@ class LiveOrderTrackerPage extends StatefulWidget {
 }
 
 class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
+  final OrderService _orderService = OrderService();
+  List<dynamic> _activeOrders = [];
+  List<dynamic> _recentOrders = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadActiveOrders();
+    // Auto-refresh every 30 seconds
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      _loadActiveOrders();
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadActiveOrders() async {
+    try {
+      final response = await _orderService.getActiveOrders();
+      
+      if (response['success']) {
+        if (mounted) {
+          setState(() {
+            _activeOrders = response['data']['activeOrders'] ?? [];
+            _isLoading = false;
+            _errorMessage = null;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _errorMessage = response['message'];
+            _isLoading = false;
+          });
+        }
+      }
+      
+      // Also load recent completed orders
+      await _loadRecentOrders();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Failed to load orders: $e';
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _updateOrderStatus(String listingId, String currentStatus) async {
+    // Determine next status based on current status
+    String nextStatus;
+    String statusMessage;
+    
+    switch (currentStatus) {
+      case 'approved':
+        nextStatus = 'in_transit';
+        statusMessage = 'Marking order as In Transit...';
+        break;
+      case 'in_transit':
+        nextStatus = 'out_for_delivery';
+        statusMessage = 'Marking order as Out for Delivery...';
+        break;
+      case 'out_for_delivery':
+        nextStatus = 'delivered';
+        statusMessage = 'Marking order as Delivered...';
+        break;
+      case 'delivered':
+        nextStatus = 'completed';
+        statusMessage = 'Completing the order...';
+        break;
+      default:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cannot update status from current state'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+    }
+
+    // Show loading snackbar
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(statusMessage),
+        duration: const Duration(seconds: 1),
+        backgroundColor: const Color(0xFF20B2AA),
+      ),
+    );
+
+    try {
+      final result = await _orderService.updateOrderStatus(listingId, nextStatus);
+
+      if (result['success']) {
+        // Show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Order status updated to $nextStatus'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+
+        // Reload orders to reflect changes
+        await _loadActiveOrders();
+
+        // If completed, show celebration message
+        if (nextStatus == 'completed' && mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Row(
+                children: const [
+                  Icon(Icons.celebration, color: Colors.orange),
+                  SizedBox(width: 8),
+                  Text('Order Completed!'),
+                ],
+              ),
+              content: const Text(
+                'Thank you for using CrumbChain! This order has been successfully completed and will be removed from active listings.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
+      } else {
+        // Show error message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message'] ?? 'Failed to update status'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _loadRecentOrders() async {
+    try {
+      final response = await _orderService.getMyOrders();
+      
+      if (response['success']) {
+        final receivedOrders = response['data']['receivedOrders'] ?? [];
+        final completed = receivedOrders.where((order) {
+          final status = order['orderStatus'];
+          return status == 'delivered' || status == 'completed';
+        }).take(5).toList();
+        
+        if (mounted) {
+          setState(() {
+            _recentOrders = completed;
+          });
+        }
+      }
+    } catch (e) {
+      // Silently fail for recent orders
+      print('Error loading recent orders: $e');
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -24,273 +210,336 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
           icon: const Icon(Icons.arrow_back, color: Colors.black87),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Color(0xFF20B2AA)),
+            onPressed: _isLoading ? null : _loadActiveOrders,
+            tooltip: 'Refresh',
+          ),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: _refreshOrders,
         color: const Color(0xFF20B2AA),
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            children: [
-              // Top section with logo
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Image.asset(
-                  'assets/images/logo.png',
-                  width: 120,
-                  height: 120,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Icon(
-                      Icons.volunteer_activism,
-                      size: 100,
-                      color: Color(0xFFE07A3E),
-                    );
-                  },
+        child: _isLoading
+            ? const Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF20B2AA)),
                 ),
-              ),
-
-              // Cream background section with icon and description
-              Container(
-                width: double.infinity,
-                color: const Color(0xFFFCEEDD),
-                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-                child: Column(
-                  children: [
-                    // Feature icon
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.05),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Image.asset(
-                        'assets/images/live-tracker.png',
-                        width: 48,
-                        height: 48,
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Icon(
-                            Icons.local_shipping,
-                            size: 48,
-                            color: Colors.black87,
-                          );
-                        },
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    const Text(
-                      'Live Order Tracker',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    Text(
-                      'Track your active deliveries in real-time',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade600,
-                        height: 1.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Active Orders Section
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 4,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF20B2AA),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Text(
-                      'Active Deliveries',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF20B2AA).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Text(
-                        '3 Active',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF20B2AA),
+              )
+            : _errorMessage != null
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.error_outline, size: 64, color: Colors.grey.shade400),
+                        const SizedBox(height: 16),
+                        Text(
+                          _errorMessage!,
+                          style: TextStyle(color: Colors.grey.shade600),
+                          textAlign: TextAlign.center,
                         ),
-                      ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _loadActiveOrders,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF20B2AA),
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text('Retry'),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
+                  )
+                : SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Column(
+                      children: [
+                        // Top section with logo
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            width: 120,
+                            height: 120,
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(
+                                Icons.volunteer_activism,
+                                size: 100,
+                                color: Color(0xFFE07A3E),
+                              );
+                            },
+                          ),
+                        ),
 
-              const SizedBox(height: 16),
+                        // Cream background section with icon and description
+                        Container(
+                          width: double.infinity,
+                          color: const Color(0xFFFCEEDD),
+                          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                          child: Column(
+                            children: [
+                              // Feature icon
+                              Container(
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.05),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Image.asset(
+                                  'assets/images/live-tracker.png',
+                                  width: 48,
+                                  height: 48,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Icon(
+                                      Icons.local_shipping,
+                                      size: 48,
+                                      color: Colors.black87,
+                                    );
+                                  },
+                                ),
+                              ),
 
-              // Body Content - Active Orders
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  children: [
-                    _buildCompactOrderCard(
-                      orderId: 'ORD-2401',
-                      foodName: 'Fresh Vegetables',
-                      donor: 'Restaurant ABC',
-                      quantity: '15 kg',
-                      status: 'Out for Delivery',
-                      statusColor: const Color(0xFF20B2AA),
-                      statusIcon: Icons.local_shipping,
-                      eta: '12 mins',
-                      pickerName: 'Rajesh Kumar',
-                      pickerVehicle: 'Bike • MH12AB1234',
-                      pickerRating: 4.8,
-                      progress: 0.75,
+                              const SizedBox(height: 16),
+
+                              const Text(
+                                'Live Order Tracker',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+
+                              const SizedBox(height: 12),
+
+                              Text(
+                                'Track your active deliveries in real-time',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade600,
+                                  height: 1.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Active Orders Section
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 4,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF20B2AA),
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              const Text(
+                                'Active Deliveries',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const Spacer(),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF20B2AA).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '${_activeOrders.length} Active',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF20B2AA),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Body Content - Active Orders
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: _activeOrders.isEmpty
+                              ? Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(32.0),
+                                    child: Column(
+                                      children: [
+                                        Icon(Icons.inbox_outlined,
+                                            size: 64, color: Colors.grey.shade300),
+                                        const SizedBox(height: 16),
+                                        Text(
+                                          'No active deliveries',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Claim listings to start tracking',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey.shade500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                              : Column(
+                                  children: _activeOrders.map((order) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: 12),
+                                      child: _buildCompactOrderCard(order),
+                                    );
+                                  }).toList(),
+                                ),
+                        ),
+
+                        if (_recentOrders.isNotEmpty) ...[
+                          const SizedBox(height: 24),
+
+                          // Recent Deliveries Section
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 4,
+                                  height: 24,
+                                  decoration: BoxDecoration(
+                                    color: Colors.green,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                const Text(
+                                  'Recent Deliveries',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // Recent Completed Orders
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                            child: Column(
+                              children: _recentOrders.map((order) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: _buildRecentDeliveryCard(order),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ],
+
+                        const SizedBox(height: 24),
+                      ],
                     ),
-
-                    const SizedBox(height: 12),
-
-                    _buildCompactOrderCard(
-                      orderId: 'ORD-2402',
-                      foodName: 'Rice & Dal',
-                      donor: 'Hotel Grand',
-                      quantity: '20 kg',
-                      status: 'Picked Up',
-                      statusColor: const Color(0xFF48B2A5),
-                      statusIcon: Icons.check_circle_outline,
-                      eta: '25 mins',
-                      pickerName: 'Amit Sharma',
-                      pickerVehicle: 'Van • MH14CD5678',
-                      pickerRating: 4.9,
-                      progress: 0.5,
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    _buildCompactOrderCard(
-                      orderId: 'ORD-2403',
-                      foodName: 'Bread & Pastries',
-                      donor: 'Bakery Fresh',
-                      quantity: '50 items',
-                      status: 'Preparing',
-                      statusColor: Colors.orange,
-                      statusIcon: Icons.restaurant,
-                      eta: '35 mins',
-                      pickerName: null, // Not assigned yet
-                      pickerVehicle: null,
-                      pickerRating: null,
-                      progress: 0.2,
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Recent Deliveries Section
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 4,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: Colors.green,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Text(
-                      'Recent Deliveries',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Recent Completed Orders
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  children: [
-                    _buildRecentDeliveryCard(
-                      foodName: 'Mixed Vegetables',
-                      donor: 'Cafe Delight',
-                      quantity: '10 kg',
-                      deliveredTime: '2 hours ago',
-                      beneficiaries: 25,
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    _buildRecentDeliveryCard(
-                      foodName: 'Cooked Meals',
-                      donor: 'Restaurant XYZ',
-                      quantity: '30 servings',
-                      deliveredTime: '5 hours ago',
-                      beneficiaries: 40,
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 24),
-            ],
-          ),
-        ),
+                  ),
       ),
       bottomNavigationBar: CommonFooter(user: widget.user),
     );
   }
 
-  Widget _buildCompactOrderCard({
-    required String orderId,
-    required String foodName,
-    required String donor,
-    required String quantity,
-    required String status,
-    required Color statusColor,
-    required IconData statusIcon,
-    required String eta,
-    String? pickerName,
-    String? pickerVehicle,
-    double? pickerRating,
-    required double progress,
-  }) {
+  Widget _buildCompactOrderCard(dynamic order) {
+    final String orderId = order['_id']?.substring(0, 8).toUpperCase() ?? 'ORDER';
+    final String foodName = order['mealType'] ?? 'Food Item';
+    final String donor = order['userName'] ?? 'Anonymous Donor';
+    final String quantity = order['quantity'] ?? 'N/A';
+    final String status = order['orderStatus'] ?? 'approved';
+    
+    final Color statusColor = Color(OrderService.getStatusColor(status));
+    
+    IconData statusIcon;
+    switch (status) {
+      case 'approved':
+        statusIcon = Icons.check_circle_outline;
+        break;
+      case 'in_transit':
+        statusIcon = Icons.local_shipping;
+        break;
+      case 'out_for_delivery':
+        statusIcon = Icons.delivery_dining;
+        break;
+      default:
+        statusIcon = Icons.info;
+    }
+    
+    // Calculate progress based on status
+    double progress;
+    switch (status) {
+      case 'approved':
+        progress = 0.25;
+        break;
+      case 'in_transit':
+        progress = 0.6;
+        break;
+      case 'out_for_delivery':
+        progress = 0.85;
+        break;
+      default:
+        progress = 0.1;
+    }
+    
+    // Calculate ETA (simplified)
+    String eta;
+    switch (status) {
+      case 'out_for_delivery':
+        eta = '10-15 mins';
+        break;
+      case 'in_transit':
+        eta = '20-30 mins';
+        break;
+      case 'approved':
+        eta = '45-60 mins';
+        break;
+      default:
+        eta = 'TBD';
+    }
+    
+    // Simulated picker info (in production, this would come from backend)
+    String? pickerName;
+    String? pickerVehicle;
+    double? pickerRating;
+    
+    if (status == 'in_transit' || status == 'out_for_delivery') {
+      pickerName = 'Delivery Partner';
+      pickerVehicle = 'Vehicle';
+      pickerRating = 4.5;
+    }
+
     return GestureDetector(
-      onTap: () => _showOrderDetails(orderId),
+      onTap: () => _showOrderDetails(order),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
@@ -537,7 +786,11 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
                       const SizedBox(width: 8),
                     ],
                     IconButton(
-                      onPressed: () => _callPicker(pickerName),
+                      onPressed: () {
+                        if (pickerName != null) {
+                          _callPicker(pickerName);
+                        }
+                      },
                       icon: const Icon(
                         Icons.phone,
                         color: Color(0xFF20B2AA),
@@ -579,19 +832,38 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
                 ),
               ),
             ],
+
+            // Status Update Button (Simulation)
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _updateOrderStatus(order['_id'], status),
+                icon: Icon(_getNextStatusIcon(status), size: 18),
+                label: Text(_getNextStatusButtonText(status)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: statusColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildRecentDeliveryCard({
-    required String foodName,
-    required String donor,
-    required String quantity,
-    required String deliveredTime,
-    required int beneficiaries,
-  }) {
+  Widget _buildRecentDeliveryCard(dynamic order) {
+    final String foodName = order['mealType'] ?? 'Food Item';
+    final String donor = order['userName'] ?? 'Anonymous Donor';
+    final String quantity = order['quantity'] ?? 'N/A';
+    final String deliveredTime = _formatTimeAgo(order['deliveredAt'] ?? order['completedAt']);
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -668,7 +940,7 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
                     ),
                     const SizedBox(width: 3),
                     Text(
-                      '$beneficiaries',
+                      '${order['crowdSize'] ?? 'N/A'}',
                       style: const TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
@@ -694,8 +966,7 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
   }
 
   Future<void> _refreshOrders() async {
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 1));
+    await _loadActiveOrders();
     
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -708,7 +979,9 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
     }
   }
 
-  void _showOrderDetails(String orderId) {
+  void _showOrderDetails(dynamic order) {
+    final String orderId = order['_id']?.substring(0, 8).toUpperCase() ?? 'ORDER';
+    
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -854,5 +1127,65 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
         ),
       ),
     );
+  }
+
+  IconData _getNextStatusIcon(String currentStatus) {
+    switch (currentStatus) {
+      case 'approved':
+        return Icons.local_shipping;
+      case 'in_transit':
+        return Icons.delivery_dining;
+      case 'out_for_delivery':
+        return Icons.check_circle;
+      case 'delivered':
+        return Icons.done_all;
+      default:
+        return Icons.arrow_forward;
+    }
+  }
+
+  String _getNextStatusButtonText(String currentStatus) {
+    switch (currentStatus) {
+      case 'approved':
+        return 'Mark as In Transit';
+      case 'in_transit':
+        return 'Mark as Out for Delivery';
+      case 'out_for_delivery':
+        return 'Mark as Delivered';
+      case 'delivered':
+        return 'Complete Order';
+      default:
+        return 'Update Status';
+    }
+  }
+
+  String _formatTimeAgo(dynamic dateValue) {
+    if (dateValue == null) return 'Recently';
+    
+    try {
+      DateTime date;
+      if (dateValue is String) {
+        date = DateTime.parse(dateValue);
+      } else if (dateValue is DateTime) {
+        date = dateValue;
+      } else {
+        return 'Recently';
+      }
+      
+      final now = DateTime.now();
+      final difference = now.difference(date);
+      
+      if (difference.inMinutes < 60) {
+        return '${difference.inMinutes} mins ago';
+      } else if (difference.inHours < 24) {
+        return '${difference.inHours} hours ago';
+      } else if (difference.inDays < 7) {
+        return '${difference.inDays} days ago';
+      } else {
+        return 'Over a week ago';
+      }
+    } catch (e) {
+      return 'Recently';
+    }
   }
 }
