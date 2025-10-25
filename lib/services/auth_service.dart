@@ -22,21 +22,25 @@ class AuthService {
       print('🔗 Signup URL: $url');
       print('📤 Sending signup request for: $email, type: $userType');
 
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'email': email,
-          'password': password,
-          'name': fullName,
-          'userType': userType,
-        }),
-      ).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          throw Exception('Connection timeout - check if backend server is running');
-        },
-      );
+      final response = await http
+          .post(
+            Uri.parse(url),
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({
+              'email': email,
+              'password': password,
+              'name': fullName,
+              'userType': userType,
+            }),
+          )
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              throw Exception(
+                'Connection timeout - check if backend server is running',
+              );
+            },
+          );
 
       print('📥 Response status: ${response.statusCode}');
       print('📥 Response body: ${response.body}');
@@ -92,9 +96,11 @@ class AuthService {
       print('❌ Signup exception: $e');
       String errorMessage = 'Connection error';
       if (e.toString().contains('timeout')) {
-        errorMessage = 'Connection timeout - check if backend is running at ${ApiConfig.baseUrl}';
+        errorMessage =
+            'Connection timeout - check if backend is running at ${ApiConfig.baseUrl}';
       } else if (e.toString().contains('SocketException')) {
-        errorMessage = 'Cannot connect to server. Check your network and backend URL.';
+        errorMessage =
+            'Cannot connect to server. Check your network and backend URL.';
       }
       return {'success': false, 'message': errorMessage};
     }
@@ -110,16 +116,20 @@ class AuthService {
       print('🔗 Login URL: $url');
       print('📤 Sending login request for: $email');
 
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'email': email, 'password': password}),
-      ).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          throw Exception('Connection timeout - check if backend server is running');
-        },
-      );
+      final response = await http
+          .post(
+            Uri.parse(url),
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({'email': email, 'password': password}),
+          )
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              throw Exception(
+                'Connection timeout - check if backend server is running',
+              );
+            },
+          );
 
       print('📥 Response status: ${response.statusCode}');
       print('📥 Response body: ${response.body}');
@@ -174,9 +184,11 @@ class AuthService {
       print('❌ Login exception: $e');
       String errorMessage = 'Connection error';
       if (e.toString().contains('timeout')) {
-        errorMessage = 'Connection timeout - check if backend is running at ${ApiConfig.baseUrl}';
+        errorMessage =
+            'Connection timeout - check if backend is running at ${ApiConfig.baseUrl}';
       } else if (e.toString().contains('SocketException')) {
-        errorMessage = 'Cannot connect to server. Check your network and backend URL.';
+        errorMessage =
+            'Cannot connect to server. Check your network and backend URL.';
       }
       return {'success': false, 'message': errorMessage};
     }
@@ -247,6 +259,109 @@ class AuthService {
       }
     } catch (e) {
       return {'success': false, 'message': 'Connection error: ${e.toString()}'};
+    }
+  }
+
+  // Update user profile
+  Future<Map<String, dynamic>> updateProfile({
+    required String fullName,
+    required String email,
+    String? imagePath,
+    String? location,
+  }) async {
+    try {
+      final token = await getToken();
+
+      if (token == null) {
+        return {'success': false, 'message': 'Not authenticated'};
+      }
+
+      final url = '${ApiConfig.baseUrl}${ApiConfig.profile}';
+      print('🔗 Update Profile URL: $url');
+      print('📤 Updating profile: $fullName, $email');
+
+      // Prepare the request body
+      final body = {'name': fullName, 'email': email};
+
+      if (location != null && location.isNotEmpty) {
+        body['location'] = location;
+      }
+
+      final response = await http
+          .put(
+            Uri.parse(url),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+            body: json.encode(body),
+          )
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              throw Exception(
+                'Connection timeout - check if backend server is running',
+              );
+            },
+          );
+
+      print('📥 Response status: ${response.statusCode}');
+      print('📥 Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['success'] == true) {
+          // Update stored user data
+          final updatedUser = User.fromJson(data['data']['user']);
+          await _storage.write(
+            key: _userKey,
+            value: json.encode(data['data']['user']),
+          );
+
+          print('✅ Profile updated successfully');
+
+          return {
+            'success': true,
+            'user': updatedUser,
+            'message': data['message'] ?? 'Profile updated successfully',
+          };
+        } else {
+          print('❌ Profile update failed: ${data['message']}');
+          return {
+            'success': false,
+            'message': data['message'] ?? 'Profile update failed',
+          };
+        }
+      } else if (response.statusCode == 401) {
+        print('❌ Unauthorized - token may be invalid');
+        return {
+          'success': false,
+          'message': 'Session expired. Please login again.',
+        };
+      } else if (response.statusCode >= 500) {
+        print('❌ Server error: ${response.statusCode}');
+        return {
+          'success': false,
+          'message': 'Server error. Please try again later.',
+        };
+      } else {
+        final error = json.decode(response.body);
+        print('❌ Update error: ${error['message']}');
+        return {
+          'success': false,
+          'message': error['message'] ?? 'Profile update failed',
+        };
+      }
+    } catch (e) {
+      print('❌ Update profile exception: $e');
+      String errorMessage = 'Connection error';
+      if (e.toString().contains('timeout')) {
+        errorMessage = 'Connection timeout - check if backend is running';
+      } else if (e.toString().contains('SocketException')) {
+        errorMessage = 'Cannot connect to server. Check your network.';
+      }
+      return {'success': false, 'message': errorMessage};
     }
   }
 }
