@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import '../models/user.dart';
 import '../widgets/common_footer.dart';
 import '../widgets/driver_profile_menu.dart';
-import 'driver_orders_list_page.dart';
 import 'driver_orders_map_page.dart';
+import 'driver_current_orders_page.dart';
+import 'driver_order_history_page.dart';
+import 'driver_perks_rewards_page.dart';
+import 'driver_impact_stories_page.dart';
 
 class DriverHomePage extends StatefulWidget {
   final User user;
@@ -93,7 +96,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                   childAspectRatio: 0.95,
                   children: [
                     _buildFeatureCard(
-                      imagePath: 'assets/images/checklist.png',
+                      imagePath: 'assets/images/steering-wheel.png',
                       label: 'Explore Orders',
                       color: const Color(0xFFE07A3E),
                     ),
@@ -139,27 +142,24 @@ class _DriverHomePageState extends State<DriverHomePage> {
         if (label == 'Explore Orders') {
           _showExploreOrdersDialog(context);
         } else if (label == 'Order History') {
-          // TODO: Navigate to driver order history
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Order History - Coming soon!'),
-              duration: Duration(seconds: 2),
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DriverOrderHistoryPage(user: widget.user),
             ),
           );
         } else if (label == 'Perks & Rewards') {
-          // TODO: Navigate to driver perks and rewards
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Perks & Rewards - Coming soon!'),
-              duration: Duration(seconds: 2),
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DriverPerksRewardsPage(user: widget.user),
             ),
           );
         } else if (label == 'Impact Stories') {
-          // TODO: Navigate to impact stories
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Impact Stories - Coming soon!'),
-              duration: Duration(seconds: 2),
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DriverImpactStoriesPage(user: widget.user),
             ),
           );
         }
@@ -236,36 +236,17 @@ class _DriverHomePageState extends State<DriverHomePage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
-              'Choose how you want to view available orders:',
+              'Choose how you want to view orders:',
               style: TextStyle(fontSize: 14),
             ),
             const SizedBox(height: 20),
-            
-            // List View Option
-            _buildViewOption(
-              context: context,
-              icon: Icons.list,
-              title: 'List View',
-              description: 'View orders in a detailed list',
-              color: const Color(0xFFE07A3E),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => DriverOrdersListPage(user: widget.user),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 12),
             
             // Map View Option
             _buildViewOption(
               context: context,
               icon: Icons.map,
-              title: 'Map View',
-              description: 'View orders on a map',
+              title: 'View Map',
+              description: 'View available orders on a map',
               color: const Color(0xFF20B2AA),
               onTap: () {
                 Navigator.pop(context);
@@ -273,6 +254,25 @@ class _DriverHomePageState extends State<DriverHomePage> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => DriverOrdersMapPage(user: widget.user),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            
+            // Current Orders Option
+            _buildViewOption(
+              context: context,
+              icon: Icons.local_shipping,
+              title: 'View Current Orders',
+              description: 'View and update your active deliveries',
+              color: const Color(0xFFE07A3E),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DriverCurrentOrdersPage(user: widget.user),
                   ),
                 );
               },

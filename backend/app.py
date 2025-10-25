@@ -1214,9 +1214,16 @@ def approve_order(current_user, listing_id):
 @app.route('/api/orders/<listing_id>/update-status', methods=['PUT'])
 @token_required
 def update_order_status(current_user, listing_id):
-    """Update order status (for simulating delivery tracking)"""
+    """Update order status - RESTRICTED: Only drivers can update order status now"""
     try:
         from bson import ObjectId
+        
+        # Check if user is a driver
+        if current_user.get('userType', '').lower() != 'driver':
+            return jsonify({
+                'success': False,
+                'message': 'Only drivers can update order status. Receivers and donors cannot change status.'
+            }), 403
         
         data = request.get_json()
         new_status = data.get('orderStatus')
@@ -1227,13 +1234,13 @@ def update_order_status(current_user, listing_id):
                 'message': 'orderStatus is required'
             }), 400
         
-        # Valid order statuses
-        valid_statuses = ['pending_approval', 'approved', 'in_transit', 'out_for_delivery', 'delivered', 'completed']
+        # Valid order statuses for drivers
+        valid_statuses = ['in_transit', 'delivered']
         
         if new_status not in valid_statuses:
             return jsonify({
                 'success': False,
-                'message': f'Invalid status. Must be one of: {", ".join(valid_statuses)}'
+                'message': f'Invalid status. Drivers can only set: {", ".join(valid_statuses)}'
             }), 400
         
         # Check if listing exists
@@ -1245,12 +1252,12 @@ def update_order_status(current_user, listing_id):
                 'message': 'Listing not found'
             }), 404
         
-        # Check if user is involved (donor or receiver)
-        user_id = str(current_user['_id'])
-        if listing['userId'] != user_id and listing.get('claimedBy') != user_id:
+        # Check if this driver is assigned to this order
+        driver_id = str(current_user['_id'])
+        if listing.get('driverId') != driver_id:
             return jsonify({
                 'success': False,
-                'message': 'You are not authorized to update this order'
+                'message': 'You can only update orders assigned to you'
             }), 403
         
         # Update order status
@@ -1614,6 +1621,137 @@ def get_driver_deliveries(current_user):
             'data': {
                 'deliveries': deliveries,
                 'count': len(deliveries)
+            }
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/driver/update-order-status/<order_id>', methods=['PUT'])
+@token_required
+def update_order_status_driver(current_user, order_id):
+    """Driver updates the status of their assigned order"""
+    try:
+        from bson import ObjectId
+        
+        # Check if user is a driver
+        if current_user.get('userType', '').lower() != 'driver':
+            return jsonify({
+                'success': False,
+                'message': 'Only drivers can update order status'
+            }), 403
+        
+        driver_id = str(current_user['_id'])
+        data = request.get_json()
+        new_status = data.get('status')
+        
+        # Validate status
+        valid_statuses = ['in_transit', 'delivered']
+        if new_status not in valid_statuses:
+            return jsonify({
+                'success': False,
+                'message': f'Invalid status. Must be one of: {", ".join(valid_statuses)}'
+            }), 400
+        
+        # Find the order
+        order = listings_collection.find_one({'_id': ObjectId(order_id)})
+        
+        if not order:
+            return jsonify({
+                'success': False,
+                'message': 'Order not found'
+            }), 404
+        
+        # Check if this driver is assigned to this order
+        if order.get('driverId') != driver_id:
+            return jsonify({
+                'success': False,
+                'message': 'You can only update orders assigned to you'
+            }), 403
+        
+        # Update order status
+        update_data = {
+            'orderStatus': new_status,
+            'updatedAt': datetime.now()
+        }
+        
+        # Add timestamp for status change
+        if new_status == 'delivered':
+            update_data['deliveredAt'] = datetime.now()
+        elif new_status == 'in_transit':
+            update_data['inTransitAt'] = datetime.now()
+        
+        listings_collection.update_one(
+            {'_id': ObjectId(order_id)},
+            {'$set': update_data}
+        )
+        
+        # Create notifications for donor and receiver
+        donor = users_collection.find_one({'_id': ObjectId(order['userId'])})
+        receiver = users_collection.find_one({'_id': ObjectId(order.get('claimedBy'))})
+        
+        driver_name = current_user.get('name', current_user.get('full_name', 'Driver'))
+        
+        # Notification messages based on status
+        if new_status == 'delivered':
+            donor_title = '✅ Delivery Completed'
+            donor_message = f'{driver_name} has successfully delivered your donation!'
+            receiver_title = '✅ Order Delivered'
+            receiver_message = f'{driver_name} has delivered your order. Enjoy your meal!'
+        elif new_status == 'in_transit':
+            donor_title = '🚗 Order in Transit'
+            donor_message = f'{driver_name} is on the way with your donation!'
+            receiver_title = '🚗 Order in Transit'
+            receiver_message = f'{driver_name} is on the way with your order!'
+        else:
+            donor_title = '📦 Order Status Updated'
+            donor_message = f'Order status updated to: {new_status}'
+            receiver_title = '📦 Order Status Updated'
+            receiver_message = f'Order status updated to: {new_status}'
+        
+        if donor:
+            create_notification(
+                order['userId'],
+                'order_status',
+                donor_title,
+                donor_message,
+                listingId=order_id,
+                orderStatus=new_status,
+                relatedUserId=driver_id,
+                relatedUserName=driver_name
+            )
+        
+        if receiver:
+            create_notification(
+                order.get('claimedBy'),
+                'order_status',
+                receiver_title,
+                receiver_message,
+                listingId=order_id,
+                orderStatus=new_status,
+                relatedUserId=driver_id,
+                relatedUserName=driver_name
+            )
+        
+        # Create notification for driver
+        create_notification(
+            driver_id,
+            'order_status',
+            '✅ Status Updated',
+            f'Order status updated to: {new_status}',
+            listingId=order_id,
+            orderStatus=new_status
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': f'Order status updated to {new_status}',
+            'data': {
+                'orderId': order_id,
+                'orderStatus': new_status
             }
         }), 200
         

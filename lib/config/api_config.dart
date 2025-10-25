@@ -3,7 +3,7 @@ import 'dart:io';
 class ApiConfig {
   // IMPORTANT: Connection mode selection
   // Options: 'usb', 'wifi', 'emulator'
-  static const String _connectionMode = 'usb'; // Set to 'usb' when using adb reverse
+  static const String _connectionMode = 'wifi'; // Set to 'usb' when using adb reverse
 
   // Automatically configures the correct endpoint
   // usb: uses localhost (requires: adb reverse tcp:5000 tcp:5000)

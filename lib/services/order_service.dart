@@ -329,4 +329,39 @@ class OrderService {
       };
     }
   }
+
+  // Driver updates order status
+  Future<Map<String, dynamic>> updateDriverOrderStatus(
+    String orderId,
+    String newStatus,
+  ) async {
+    try {
+      final token = await _storage.read(key: 'auth_token');
+      
+      if (token == null) {
+        return {
+          'success': false,
+          'message': 'Please login to update order status'
+        };
+      }
+
+      final response = await http.put(
+        Uri.parse('${ApiConfig.baseUrl}/driver/update-order-status/$orderId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode({
+          'status': newStatus,
+        }),
+      );
+
+      return json.decode(response.body);
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Failed to update order status: $e'
+      };
+    }
+  }
 }

@@ -73,92 +73,6 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
     }
   }
 
-  Future<void> _updateOrderStatus(String listingId, String currentStatus, [Map<String, dynamic>? orderData]) async {
-    // Determine next status based on current status
-    String nextStatus;
-    String statusMessage;
-    
-    switch (currentStatus) {
-      case 'approved':
-        nextStatus = 'in_transit';
-        statusMessage = 'Marking order as In Transit...';
-        break;
-      case 'in_transit':
-        nextStatus = 'out_for_delivery';
-        statusMessage = 'Marking order as Out for Delivery...';
-        break;
-      case 'out_for_delivery':
-        nextStatus = 'delivered';
-        statusMessage = 'Marking order as Delivered...';
-        break;
-      case 'delivered':
-        nextStatus = 'completed';
-        statusMessage = 'Completing the order...';
-        break;
-      default:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cannot update status from current state'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        return;
-    }
-
-    // Show loading snackbar
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(statusMessage),
-        duration: const Duration(seconds: 1),
-        backgroundColor: const Color(0xFF20B2AA),
-      ),
-    );
-
-    try {
-      final result = await _orderService.updateOrderStatus(listingId, nextStatus);
-
-      if (result['success']) {
-        // Show success message
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Order status updated to $nextStatus'),
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
-
-        // Reload orders to reflect changes
-        await _loadActiveOrders();
-
-        // If completed, show rating dialog
-        if (nextStatus == 'completed' && mounted && orderData != null) {
-          _showRatingDialog(orderData);
-        }
-      } else {
-        // Show error message
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(result['message'] ?? 'Failed to update status'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
   Future<void> _loadRecentOrders() async {
     try {
       final response = await _orderService.getMyOrders();
@@ -814,26 +728,6 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
                 ),
               ),
             ],
-
-            // Status Update Button (Simulation)
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () => _updateOrderStatus(order['_id'], status, order),
-                icon: Icon(_getNextStatusIcon(status), size: 18),
-                label: Text(_getNextStatusButtonText(status)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: statusColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  elevation: 0,
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -1109,36 +1003,6 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
         ),
       ),
     );
-  }
-
-  IconData _getNextStatusIcon(String currentStatus) {
-    switch (currentStatus) {
-      case 'approved':
-        return Icons.local_shipping;
-      case 'in_transit':
-        return Icons.delivery_dining;
-      case 'out_for_delivery':
-        return Icons.check_circle;
-      case 'delivered':
-        return Icons.done_all;
-      default:
-        return Icons.arrow_forward;
-    }
-  }
-
-  String _getNextStatusButtonText(String currentStatus) {
-    switch (currentStatus) {
-      case 'approved':
-        return 'Mark as In Transit';
-      case 'in_transit':
-        return 'Mark as Out for Delivery';
-      case 'out_for_delivery':
-        return 'Mark as Delivered';
-      case 'delivered':
-        return 'Complete Order';
-      default:
-        return 'Update Status';
-    }
   }
 
   String _formatTimeAgo(dynamic dateValue) {
