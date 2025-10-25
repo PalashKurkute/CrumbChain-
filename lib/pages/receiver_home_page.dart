@@ -4,6 +4,8 @@ import '../widgets/common_footer.dart';
 import '../widgets/receiver_profile_menu.dart';
 import 'create_requirements_page.dart';
 import 'listings_map_page.dart';
+import 'order_history_page.dart';
+import 'live_order_tracker_page.dart';
 
 class ReceiverHomePage extends StatefulWidget {
   final User user;
@@ -190,19 +192,17 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
             ),
           );
         } else if (label == 'Order History') {
-          // TODO: Navigate to order history page
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Order History feature coming soon!'),
-              backgroundColor: Color(0xFFE07A3E),
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => OrderHistoryPage(user: widget.user),
             ),
           );
         } else if (label == 'Live Order Tracker') {
-          // TODO: Navigate to live order tracker page
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Live Order Tracker feature coming soon!'),
-              backgroundColor: Color(0xFFE07A3E),
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => LiveOrderTrackerPage(user: widget.user),
             ),
           );
         }
