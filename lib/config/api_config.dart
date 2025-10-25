@@ -10,7 +10,7 @@ class ApiConfig {
   static String get baseUrl {
     if (Platform.isAndroid) {
       const String localIp =
-          '10.9.31.173'; // Your computer's IP on local network
+          '10.9.31.191'; // Your computer's IP on local network (UPDATED)
       const String emulatorIp = '10.0.2.2'; // Emulator special IP
 
       final ip = _useEmulator ? emulatorIp : localIp;
@@ -18,7 +18,7 @@ class ApiConfig {
     }
 
     // Fallback for other platforms
-    return 'http://10.9.31.173:5000/api';
+    return 'http://10.9.31.191:5000/api';
   }
 
   // API Endpoints

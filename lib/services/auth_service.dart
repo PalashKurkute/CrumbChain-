@@ -20,7 +20,7 @@ class AuthService {
     try {
       final url = '${ApiConfig.baseUrl}${ApiConfig.register}';
       print('🔗 Signup URL: $url');
-      print('📤 Sending signup request...');
+      print('📤 Sending signup request for: $email, type: $userType');
 
       final response = await http.post(
         Uri.parse(url),
@@ -31,6 +31,11 @@ class AuthService {
           'name': fullName,
           'userType': userType,
         }),
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw Exception('Connection timeout - check if backend server is running');
+        },
       );
 
       print('📥 Response status: ${response.statusCode}');
@@ -47,27 +52,51 @@ class AuthService {
             value: json.encode(data['data']['user']),
           );
 
+          print('✅ Signup successful for: ${data['data']['user']['email']}');
+
           return {
             'success': true,
             'user': User.fromJson(data['data']['user']),
             'message': data['message'],
           };
         } else {
+          print('❌ Signup failed: ${data['message']}');
           return {
             'success': false,
             'message': data['message'] ?? 'Signup failed',
           };
         }
+      } else if (response.statusCode == 409) {
+        // Email already exists
+        final error = json.decode(response.body);
+        print('❌ Email already registered: ${error['message']}');
+        return {
+          'success': false,
+          'message': error['message'] ?? 'Email already registered',
+        };
+      } else if (response.statusCode >= 500) {
+        print('❌ Server error: ${response.statusCode}');
+        return {
+          'success': false,
+          'message': 'Server error. Please try again later.',
+        };
       } else {
         final error = json.decode(response.body);
+        print('❌ Signup error: ${error['message']}');
         return {
           'success': false,
           'message': error['message'] ?? 'Signup failed',
         };
       }
     } catch (e) {
-      print('❌ Signup error: $e');
-      return {'success': false, 'message': 'Connection error: ${e.toString()}'};
+      print('❌ Signup exception: $e');
+      String errorMessage = 'Connection error';
+      if (e.toString().contains('timeout')) {
+        errorMessage = 'Connection timeout - check if backend is running at ${ApiConfig.baseUrl}';
+      } else if (e.toString().contains('SocketException')) {
+        errorMessage = 'Cannot connect to server. Check your network and backend URL.';
+      }
+      return {'success': false, 'message': errorMessage};
     }
   }
 
@@ -77,11 +106,23 @@ class AuthService {
     required String password,
   }) async {
     try {
+      final url = '${ApiConfig.baseUrl}${ApiConfig.login}';
+      print('🔗 Login URL: $url');
+      print('📤 Sending login request for: $email');
+
       final response = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}${ApiConfig.login}'),
+        Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'email': email, 'password': password}),
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw Exception('Connection timeout - check if backend server is running');
+        },
       );
+
+      print('📥 Response status: ${response.statusCode}');
+      print('📥 Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -94,26 +135,50 @@ class AuthService {
             value: json.encode(data['data']['user']),
           );
 
+          print('✅ Login successful for: ${data['data']['user']['email']}');
+
           return {
             'success': true,
             'user': User.fromJson(data['data']['user']),
             'message': data['message'],
           };
         } else {
+          print('❌ Login failed: ${data['message']}');
           return {
             'success': false,
             'message': data['message'] ?? 'Login failed',
           };
         }
+      } else if (response.statusCode == 401) {
+        final error = json.decode(response.body);
+        print('❌ Authentication failed: ${error['message']}');
+        return {
+          'success': false,
+          'message': error['message'] ?? 'Invalid email or password',
+        };
+      } else if (response.statusCode >= 500) {
+        print('❌ Server error: ${response.statusCode}');
+        return {
+          'success': false,
+          'message': 'Server error. Please try again later.',
+        };
       } else {
         final error = json.decode(response.body);
+        print('❌ Login error: ${error['message']}');
         return {
           'success': false,
           'message': error['message'] ?? 'Login failed',
         };
       }
     } catch (e) {
-      return {'success': false, 'message': 'Connection error: ${e.toString()}'};
+      print('❌ Login exception: $e');
+      String errorMessage = 'Connection error';
+      if (e.toString().contains('timeout')) {
+        errorMessage = 'Connection timeout - check if backend is running at ${ApiConfig.baseUrl}';
+      } else if (e.toString().contains('SocketException')) {
+        errorMessage = 'Cannot connect to server. Check your network and backend URL.';
+      }
+      return {'success': false, 'message': errorMessage};
     }
   }
 
