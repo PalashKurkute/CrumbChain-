@@ -21,10 +21,33 @@ CORS(app)  # Enable CORS for Flutter app
 # Configuration
 app.config['SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'your-secret-key')
 app.config['UPLOAD_FOLDER'] = os.getenv('UPLOAD_FOLDER', 'uploads/id_proofs')
-app.config['MAX_CONTENT_LENGTH'] = int(os.getenv('MAX_FILE_SIZE', 5242880))  # 5MB default
+app.config['MAX_CONTENT_LENGTH'] = int(os.getenv('MAX_FILE_SIZE', 16777216))  # 16MB default (increased for images)
 
 # Ensure upload folder exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# ============= ERROR HANDLERS =============
+
+@app.errorhandler(413)
+def request_entity_too_large(error):
+    """Handle file size exceeded error"""
+    return jsonify({
+        'success': False,
+        'message': 'File too large. Maximum file size is 16MB.'
+    }), 413
+
+@app.errorhandler(Exception)
+def handle_exception(error):
+    """Handle general exceptions"""
+    print(f"❌ Unhandled exception: {error}")
+    import traceback
+    traceback.print_exc()
+    return jsonify({
+        'success': False,
+        'message': f'Server error: {str(error)}'
+    }), 500
+
+# ============= END ERROR HANDLERS =============
 
 # MongoDB connection
 MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/')
