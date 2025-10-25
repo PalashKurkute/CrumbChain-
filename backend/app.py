@@ -373,6 +373,11 @@ def create_listing(current_user):
             'updatedAt': datetime.now()
         }
         
+        # Add coordinates if provided
+        if 'latitude' in data and 'longitude' in data:
+            listing_doc['latitude'] = float(data['latitude'])
+            listing_doc['longitude'] = float(data['longitude'])
+        
         # Insert listing
         result = listings_collection.insert_one(listing_doc)
         
@@ -398,18 +403,38 @@ def create_listing(current_user):
         }), 500
 
 @app.route('/api/listings', methods=['GET'])
-@token_required
-def get_listings(current_user):
-    """Get all listings or user's listings"""
+def get_listings():
+    """Get all listings or user's listings (public endpoint for browsing, auth optional)"""
     try:
+        # Check if user is authenticated (optional)
+        token = request.headers.get('Authorization')
+        current_user_id = None
+        
+        if token:
+            try:
+                if token.startswith('Bearer '):
+                    token = token[7:]
+                data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+                current_user_id = data['user_id']
+            except:
+                pass  # Token invalid or expired, continue as public access
+        
         # Query parameters
         user_only = request.args.get('userOnly', 'false').lower() == 'true'
         status = request.args.get('status', None)
         
         # Build query
         query = {}
+        
+        # If userOnly is requested, authentication is required
         if user_only:
-            query['userId'] = str(current_user['_id'])
+            if not current_user_id:
+                return jsonify({
+                    'success': False,
+                    'message': 'Authentication required for user-specific listings'
+                }), 401
+            query['userId'] = current_user_id
+        
         if status:
             query['status'] = status
         
@@ -439,9 +464,8 @@ def get_listings(current_user):
         }), 500
 
 @app.route('/api/listings/<listing_id>', methods=['GET'])
-@token_required
-def get_listing(current_user, listing_id):
-    """Get a specific listing by ID"""
+def get_listing(listing_id):
+    """Get a specific listing by ID (public endpoint)"""
     try:
         from bson import ObjectId
         

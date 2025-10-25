@@ -3,6 +3,7 @@ import '../models/user.dart';
 import '../widgets/common_footer.dart';
 import '../widgets/receiver_profile_menu.dart';
 import 'create_requirements_page.dart';
+import 'listings_map_page.dart';
 
 class ReceiverHomePage extends StatefulWidget {
   final User user;
@@ -182,11 +183,10 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
             ),
           );
         } else if (label == 'Explore Listings') {
-          // TODO: Navigate to explore listings page
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Explore Listings feature coming soon!'),
-              backgroundColor: Color(0xFFE07A3E),
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ListingsMapPage(user: widget.user),
             ),
           );
         } else if (label == 'Order History') {

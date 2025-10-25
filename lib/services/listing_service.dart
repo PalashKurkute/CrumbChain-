@@ -91,7 +91,8 @@ class ListingService {
     try {
       final token = await _getToken();
 
-      if (token == null) {
+      // If userOnly is requested, token is required
+      if (userOnly && token == null) {
         return {'success': false, 'message': 'Not authenticated'};
       }
 
@@ -112,12 +113,18 @@ class ListingService {
 
       print('🔗 Get Listings URL: $url');
 
+      // Build headers - include token if available, but don't require it for public browsing
+      Map<String, String> headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token != null) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+
       final response = await http.get(
         Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: headers,
       );
 
       print('📥 Response status: ${response.statusCode}');
@@ -149,19 +156,21 @@ class ListingService {
     try {
       final token = await _getToken();
 
-      if (token == null) {
-        return {'success': false, 'message': 'Not authenticated'};
-      }
-
       final url = '${ApiConfig.baseUrl}${ApiConfig.listings}/$listingId';
       print('🔗 Get Listing URL: $url');
 
+      // Build headers - include token if available, but don't require it
+      Map<String, String> headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token != null) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+
       final response = await http.get(
         Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: headers,
       );
 
       print('📥 Response status: ${response.statusCode}');
