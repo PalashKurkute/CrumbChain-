@@ -12,7 +12,7 @@ class ApiConfig {
   static String get baseUrl {
     if (Platform.isAndroid) {
       const String localIp =
-          '10.9.31.191'; // Your computer's IP on local network (UPDATED)
+          '10.9.31.173'; // Your computer's IP on local network (UPDATED)
       const String emulatorIp = '10.0.2.2'; // Emulator special IP
       const String usbIp = 'localhost'; // USB connection via adb reverse
 
