@@ -25,8 +25,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
   bool _isLoading = true;
   String _selectedFilter = 'all'; // all, unread, order_status, approval_request
   int _unreadCount = 0;
-  Set<String> _processingApprovals = {}; // Track which listings are being approved
-  Set<String> _approvedListings = {}; // Track which listings have been approved
+  final Set<String> _processingApprovals = {}; // Track which listings are being approved
+  final Set<String> _approvedListings = {}; // Track which listings have been approved
 
   @override
   void initState() {

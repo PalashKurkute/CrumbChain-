@@ -20,7 +20,7 @@ class DonorHomePage extends StatefulWidget {
 }
 
 class _DonorHomePageState extends State<DonorHomePage> {
-  int _selectedIndex = 1; // Start with Home selected (center)
+  final int _selectedIndex = 1; // Start with Home selected (center)
 
   @override
   Widget build(BuildContext context) {

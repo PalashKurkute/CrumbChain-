@@ -115,7 +115,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       onChanged: (value) {
                         // TODO: Implement notification toggle
                       },
-                      activeColor: const Color(0xFFE07A3E),
+                      activeThumbColor: const Color(0xFFE07A3E),
                     ),
                     contentPadding: EdgeInsets.zero,
                   ),
@@ -126,7 +126,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       onChanged: (value) {
                         // TODO: Implement email notification toggle
                       },
-                      activeColor: const Color(0xFFE07A3E),
+                      activeThumbColor: const Color(0xFFE07A3E),
                     ),
                     contentPadding: EdgeInsets.zero,
                   ),

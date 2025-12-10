@@ -268,7 +268,7 @@ class _DonateStaleFoodPageState extends State<DonateStaleFoodPage> {
 
         // Fallback to a basic description if no address found
         if (address.isEmpty) {
-          address = '${place.locality ?? 'Unknown location'}';
+          address = place.locality ?? 'Unknown location';
         }
 
         setState(() {
@@ -748,7 +748,7 @@ class _DonateStaleFoodPageState extends State<DonateStaleFoodPage> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: _selectedPackagingType,
+                      initialValue: _selectedPackagingType,
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: const Color(0xFFFCEEDD),

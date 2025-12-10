@@ -787,7 +787,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
 
         // Fallback to a basic description if no address found
         if (address.isEmpty) {
-          address = '${place.locality ?? 'Unknown location'}';
+          address = place.locality ?? 'Unknown location';
         }
 
         setState(() {
@@ -1560,7 +1560,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: _selectedDietaryTag,
+                      initialValue: _selectedDietaryTag,
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: const Color(0xFFFCEEDD),
@@ -1603,7 +1603,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: _selectedTemperatureStatus,
+                      initialValue: _selectedTemperatureStatus,
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: const Color(0xFFFCEEDD),
@@ -1739,7 +1739,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: _selectedPackagingType,
+                      initialValue: _selectedPackagingType,
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: const Color(0xFFFCEEDD),
@@ -1830,7 +1830,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
                               ),
                               Switch(
                                 value: _isPaidDonation,
-                                activeColor: const Color(0xFFE07A3E),
+                                activeThumbColor: const Color(0xFFE07A3E),
                                 onChanged: (value) {
                                   setState(() {
                                     _isPaidDonation = value;

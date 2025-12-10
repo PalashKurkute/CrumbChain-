@@ -336,7 +336,7 @@ class _CreateRequirementsPageState extends State<CreateRequirementsPage> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: _selectedFoodTag,
+                      initialValue: _selectedFoodTag,
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: const Color(0xFFFCEEDD),
@@ -381,7 +381,7 @@ class _CreateRequirementsPageState extends State<CreateRequirementsPage> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: _selectedCategory,
+                      initialValue: _selectedCategory,
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: const Color(0xFFFCEEDD),

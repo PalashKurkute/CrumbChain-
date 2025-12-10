@@ -32,7 +32,7 @@ class OrderWithDistance {
 class _DriverOrdersMapPageState extends State<DriverOrdersMapPage> {
   final OrderService _orderService = OrderService();
   final MapController _mapController = MapController();
-  
+
   List<OrderWithDistance> _ordersWithDistance = [];
   List<Marker> _markers = [];
   bool _isLoading = true;
@@ -98,7 +98,9 @@ class _DriverOrdersMapPageState extends State<DriverOrdersMapPage> {
 
       if (result['success']) {
         final ordersData = result['data']['orders'] as List;
-        final orders = ordersData.map((json) => Listing.fromJson(json)).toList();
+        final orders = ordersData
+            .map((json) => Listing.fromJson(json))
+            .toList();
 
         // Geocode orders and create markers
         await _processOrders(orders);
@@ -138,12 +140,14 @@ class _DriverOrdersMapPageState extends State<DriverOrdersMapPage> {
           // Calculate distance from driver's location
           double? distance;
           if (_locationPermissionGranted) {
-            distance = Geolocator.distanceBetween(
-              _currentPosition.latitude,
-              _currentPosition.longitude,
-              coordinates.latitude,
-              coordinates.longitude,
-            ) / 1000; // Convert to kilometers
+            distance =
+                Geolocator.distanceBetween(
+                  _currentPosition.latitude,
+                  _currentPosition.longitude,
+                  coordinates.latitude,
+                  coordinates.longitude,
+                ) /
+                1000; // Convert to kilometers
           }
 
           final orderWithDistance = OrderWithDistance(
@@ -153,7 +157,7 @@ class _DriverOrdersMapPageState extends State<DriverOrdersMapPage> {
           );
 
           processedOrders.add(orderWithDistance);
-          
+
           markers.add(
             Marker(
               point: coordinates,
@@ -254,7 +258,7 @@ class _DriverOrdersMapPageState extends State<DriverOrdersMapPage> {
       },
       child: Container(
         width: 280,
-        height: 180,
+        height: 140,
         margin: const EdgeInsets.only(right: 12),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -277,10 +281,14 @@ class _DriverOrdersMapPageState extends State<DriverOrdersMapPage> {
           children: [
             // Header with food type and distance
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFF20B2AA) : const Color(0xFFE07A3E),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+                color: isSelected
+                    ? const Color(0xFF20B2AA)
+                    : const Color(0xFFE07A3E),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(15),
+                ),
               ),
               child: Row(
                 children: [
@@ -298,7 +306,10 @@ class _DriverOrdersMapPageState extends State<DriverOrdersMapPage> {
                   ),
                   if (distance != null)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
@@ -306,7 +317,11 @@ class _DriverOrdersMapPageState extends State<DriverOrdersMapPage> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.near_me, size: 12, color: Color(0xFFE07A3E)),
+                          const Icon(
+                            Icons.near_me,
+                            size: 12,
+                            color: Color(0xFFE07A3E),
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             distance < 1
@@ -326,16 +341,20 @@ class _DriverOrdersMapPageState extends State<DriverOrdersMapPage> {
             ),
 
             // Content - Pickup and delivery info
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
                     // Pickup location
                     Row(
                       children: [
-                        const Icon(Icons.restaurant, size: 14, color: Color(0xFFE07A3E)),
+                        const Icon(
+                          Icons.restaurant,
+                          size: 14,
+                          color: Color(0xFFE07A3E),
+                        ),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
@@ -351,12 +370,16 @@ class _DriverOrdersMapPageState extends State<DriverOrdersMapPage> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
-                    
+                    const SizedBox(height: 3),
+
                     // Delivery to
                     Row(
                       children: [
-                        const Icon(Icons.person, size: 14, color: Color(0xFF20B2AA)),
+                        const Icon(
+                          Icons.person,
+                          size: 14,
+                          color: Color(0xFF20B2AA),
+                        ),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
@@ -372,8 +395,8 @@ class _DriverOrdersMapPageState extends State<DriverOrdersMapPage> {
                         ),
                       ],
                     ),
-                    
-                    const SizedBox(height: 8),
+
+                    const SizedBox(height: 4),
 
                     // Quantity and location
                     Row(
@@ -389,10 +412,14 @@ class _DriverOrdersMapPageState extends State<DriverOrdersMapPage> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Row(
                       children: [
-                        Icon(Icons.location_on, size: 12, color: Colors.grey[600]),
+                        Icon(
+                          Icons.location_on,
+                          size: 12,
+                          color: Colors.grey[600],
+                        ),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
@@ -410,7 +437,6 @@ class _DriverOrdersMapPageState extends State<DriverOrdersMapPage> {
                   ],
                 ),
               ),
-            ),
           ],
         ),
       ),
@@ -420,7 +446,7 @@ class _DriverOrdersMapPageState extends State<DriverOrdersMapPage> {
   void _showOrderDetails(OrderWithDistance orderWithDistance) {
     final order = orderWithDistance.order;
     final distance = orderWithDistance.distanceInKm;
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -469,7 +495,10 @@ class _DriverOrdersMapPageState extends State<DriverOrdersMapPage> {
                       ),
                       if (distance != null)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFFFCEEDD),
                             borderRadius: BorderRadius.circular(16),
@@ -478,7 +507,11 @@ class _DriverOrdersMapPageState extends State<DriverOrdersMapPage> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.near_me, size: 16, color: Color(0xFFE07A3E)),
+                              const Icon(
+                                Icons.near_me,
+                                size: 16,
+                                color: Color(0xFFE07A3E),
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 distance < 1
@@ -576,7 +609,10 @@ class _DriverOrdersMapPageState extends State<DriverOrdersMapPage> {
                             await _claimDelivery(order);
                           },
                           icon: const Icon(Icons.local_shipping, size: 22),
-                          label: const Text('Claim Delivery', style: TextStyle(fontSize: 16)),
+                          label: const Text(
+                            'Claim Delivery',
+                            style: TextStyle(fontSize: 16),
+                          ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF20B2AA),
                             foregroundColor: Colors.white,
@@ -606,7 +642,10 @@ class _DriverOrdersMapPageState extends State<DriverOrdersMapPage> {
                           label: const Text('Navigate'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: const Color(0xFFE07A3E),
-                            side: const BorderSide(color: Color(0xFFE07A3E), width: 2),
+                            side: const BorderSide(
+                              color: Color(0xFFE07A3E),
+                              width: 2,
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -631,9 +670,7 @@ class _DriverOrdersMapPageState extends State<DriverOrdersMapPage> {
       context: context,
       barrierDismissible: false,
       builder: (context) => const Center(
-        child: CircularProgressIndicator(
-          color: Color(0xFF20B2AA),
-        ),
+        child: CircularProgressIndicator(color: Color(0xFF20B2AA)),
       ),
     );
 
@@ -690,18 +727,10 @@ class _DriverOrdersMapPageState extends State<DriverOrdersMapPage> {
             width: 120,
             child: Text(
               '$label:',
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
             ),
           ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontSize: 14),
-            ),
-          ),
+          Expanded(child: Text(value, style: const TextStyle(fontSize: 14))),
         ],
       ),
     );
@@ -714,10 +743,7 @@ class _DriverOrdersMapPageState extends State<DriverOrdersMapPage> {
       appBar: AppBar(
         title: const Text(
           'Available Deliveries',
-          style: TextStyle(
-            color: Colors.black87,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
@@ -742,227 +768,220 @@ class _DriverOrdersMapPageState extends State<DriverOrdersMapPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(
-                    color: Color(0xFF20B2AA),
-                  ),
+                  CircularProgressIndicator(color: Color(0xFF20B2AA)),
                   SizedBox(height: 16),
                   Text('Loading available deliveries...'),
                 ],
               ),
             )
           : _errorMessage != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+                  const SizedBox(height: 16),
+                  Text(
+                    _errorMessage!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _fetchOrders,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF20B2AA),
+                    ),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            )
+          : Column(
+              children: [
+                // Map Section
+                Expanded(
+                  child: Stack(
                     children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 64,
-                        color: Colors.red[300],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        _errorMessage!,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _fetchOrders,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF20B2AA),
+                      // Map
+                      FlutterMap(
+                        mapController: _mapController,
+                        options: MapOptions(
+                          initialCenter: _currentPosition,
+                          initialZoom: 12,
+                          minZoom: 5,
+                          maxZoom: 18,
                         ),
-                        child: const Text('Retry'),
+                        children: [
+                          TileLayer(
+                            urlTemplate:
+                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            userAgentPackageName: 'com.example.crumbchain',
+                          ),
+                          MarkerLayer(markers: _markers),
+                          // Current location marker
+                          if (_locationPermissionGranted)
+                            MarkerLayer(
+                              markers: [
+                                Marker(
+                                  point: _currentPosition,
+                                  width: 40,
+                                  height: 40,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white,
+                                        width: 3,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.3),
+                                          blurRadius: 8,
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Icon(
+                                      Icons.person,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                        ],
+                      ),
+
+                      // Orders count badge
+                      Positioned(
+                        top: 16,
+                        left: 16,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.local_shipping,
+                                color: Color(0xFF20B2AA),
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '${_ordersWithDistance.length} available',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF20B2AA),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                )
-              : Column(
-                  children: [
-                    // Map Section
-                    Expanded(
-                      child: Stack(
-                        children: [
-                          // Map
-                          FlutterMap(
-                            mapController: _mapController,
-                            options: MapOptions(
-                              initialCenter: _currentPosition,
-                              initialZoom: 12,
-                              minZoom: 5,
-                              maxZoom: 18,
-                            ),
+                ),
+
+                // Horizontal Scrollable List of Orders
+                if (_ordersWithDistance.isNotEmpty)
+                  Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, -2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                          child: Row(
                             children: [
-                              TileLayer(
-                                urlTemplate:
-                                    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                userAgentPackageName: 'com.example.crumbchain',
-                              ),
-                              MarkerLayer(markers: _markers),
-                              // Current location marker
-                              if (_locationPermissionGranted)
-                                MarkerLayer(
-                                  markers: [
-                                    Marker(
-                                      point: _currentPosition,
-                                      width: 40,
-                                      height: 40,
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          color: Colors.blue,
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: Colors.white,
-                                            width: 3,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black.withOpacity(0.3),
-                                              blurRadius: 8,
-                                            ),
-                                          ],
-                                        ),
-                                        child: const Icon(
-                                          Icons.person,
-                                          color: Colors.white,
-                                          size: 20,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                              const Text(
+                                'Nearby Deliveries',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
                                 ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF20B2AA),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '${_ordersWithDistance.length}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                              const Spacer(),
+                              const Icon(
+                                Icons.swipe,
+                                size: 16,
+                                color: Colors.grey,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Swipe',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
                             ],
                           ),
-
-                          // Orders count badge
-                          Positioned(
-                            top: 16,
-                            left: 16,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.2),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.local_shipping,
-                                    color: Color(0xFF20B2AA),
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '${_ordersWithDistance.length} available',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFF20B2AA),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                        ),
+                        Expanded(
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: _ordersWithDistance.length,
+                            itemBuilder: (context, index) {
+                              return _buildOrderCard(
+                                _ordersWithDistance[index],
+                              );
+                            },
                           ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
                     ),
-
-                    // Horizontal Scrollable List of Orders
-                    if (_ordersWithDistance.isNotEmpty)
-                      Container(
-                        height: 200,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 8,
-                              offset: const Offset(0, -2),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                              child: Row(
-                                children: [
-                                  const Text(
-                                    'Nearby Deliveries',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF20B2AA),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      '${_ordersWithDistance.length}',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  const Icon(
-                                    Icons.swipe,
-                                    size: 16,
-                                    color: Colors.grey,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Swipe',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Expanded(
-                              child: ListView.builder(
-                                scrollDirection: Axis.horizontal,
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                itemCount: _ordersWithDistance.length,
-                                itemBuilder: (context, index) {
-                                  return _buildOrderCard(_ordersWithDistance[index]);
-                                },
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-      bottomNavigationBar: CommonFooter(
-        selectedIndex: 1,
-        user: widget.user,
-      ),
+                  ),
+              ],
+            ),
+      bottomNavigationBar: CommonFooter(selectedIndex: 1, user: widget.user),
     );
   }
 }

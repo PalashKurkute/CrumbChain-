@@ -3,7 +3,8 @@ import 'dart:io';
 class ApiConfig {
   // IMPORTANT: Connection mode selection
   // Options: 'usb', 'wifi', 'emulator'
-  static const String _connectionMode = 'wifi'; // Set to 'usb' when using adb reverse
+  static const String _connectionMode =
+      'wifi'; // Set to 'usb' when using adb reverse
 
   // Automatically configures the correct endpoint
   // usb: uses localhost (requires: adb reverse tcp:5000 tcp:5000)
@@ -12,12 +13,12 @@ class ApiConfig {
   static String get baseUrl {
     if (Platform.isAndroid) {
       const String localIp =
-          '10.9.31.173'; // Your computer's IP on local network (UPDATED)
+          '192.168.0.101'; // Your computer's IP on local network (UPDATED)
       const String emulatorIp = '10.0.2.2'; // Emulator special IP
       const String usbIp = 'localhost'; // USB connection via adb reverse
 
-      final ip = _connectionMode == 'usb' 
-          ? usbIp 
+      final ip = _connectionMode == 'usb'
+          ? usbIp
           : (_connectionMode == 'emulator' ? emulatorIp : localIp);
       final url = 'http://$ip:5000/api';
       print('📡 API Config - Connection Mode: $_connectionMode');
