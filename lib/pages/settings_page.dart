@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/user.dart';
+import '../providers/theme_provider.dart';
 
 class SettingsPage extends StatefulWidget {
   final User? user;
@@ -11,15 +13,24 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  String _selectedTheme = 'Light';
-
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
+    // Get current theme mode as string
+    String getCurrentThemeString() {
+      switch (themeProvider.themeMode) {
+        case ThemeMode.light:
+          return 'Light';
+        case ThemeMode.dark:
+          return 'Dark';
+        case ThemeMode.system:
+          return 'System';
+      }
+    }
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        backgroundColor: const Color(0xFFE07A3E),
-      ),
+      appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -41,7 +52,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     children: [
                       const Text('Theme', style: TextStyle(fontSize: 16)),
                       DropdownButton<String>(
-                        value: _selectedTheme,
+                        value: getCurrentThemeString(),
                         items: const [
                           DropdownMenuItem(
                             value: 'Light',
@@ -75,16 +86,31 @@ class _SettingsPageState extends State<SettingsPage> {
                           ),
                         ],
                         onChanged: (String? newValue) {
-                          setState(() {
-                            _selectedTheme = newValue!;
-                          });
-                          // TODO: Implement theme change logic
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Theme changed to $_selectedTheme'),
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
+                          if (newValue != null) {
+                            ThemeMode mode;
+                            switch (newValue) {
+                              case 'Light':
+                                mode = ThemeMode.light;
+                                break;
+                              case 'Dark':
+                                mode = ThemeMode.dark;
+                                break;
+                              case 'System':
+                                mode = ThemeMode.system;
+                                break;
+                              default:
+                                mode = ThemeMode.light;
+                            }
+                            themeProvider.setThemeMode(mode);
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Theme changed to $newValue'),
+                                duration: const Duration(seconds: 2),
+                                backgroundColor: const Color(0xFFE07A3E),
+                              ),
+                            );
+                          }
                         },
                       ),
                     ],

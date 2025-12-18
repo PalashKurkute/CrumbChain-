@@ -71,6 +71,11 @@ FOOD_MODEL = None
 FOOD_CLASSES = []
 IMG_SIZE = (299, 299)  # InceptionV3 input size
 
+# PyTorch model (new 80-class Indian food model)
+PYTORCH_MODEL = None
+PYTORCH_CLASSES = []
+PYTORCH_IMG_SIZE = (224, 224)  # EfficientNetB2 input size
+
 def load_food_detection_model():
     """Load the trained food detection model (InceptionV3)"""
     global FOOD_MODEL, FOOD_CLASSES
@@ -107,8 +112,66 @@ def load_food_detection_model():
     except Exception as e:
         print(f"❌ Failed to load food detection model: {e}")
 
-# Load the model when app starts
+def load_pytorch_food_model():
+    """Load the advanced food recognition system (80 Indian foods)"""
+    global PYTORCH_MODEL, PYTORCH_CLASSES
+    
+    try:
+        import torch
+        import torch.nn as nn
+        from torchvision import models
+        
+        model_path = os.path.join(os.path.dirname(__file__), 'models', 'best_food_model_reference.pth')
+        labels_path = os.path.join(os.path.dirname(__file__), 'models', 'labels_80.txt')
+        
+        if not os.path.exists(model_path):
+            print(f"⚠️  Recognition system not found at {model_path}")
+            return
+        
+        if not os.path.exists(labels_path):
+            print(f"⚠️  Food categories file not found at {labels_path}")
+            return
+        
+        # Load food categories
+        with open(labels_path, 'r') as f:
+            PYTORCH_CLASSES = [line.strip() for line in f.readlines() if line.strip()]
+        
+        num_classes = len(PYTORCH_CLASSES)
+        
+        # Initialize recognition system
+        print("🔄 Loading food recognition system...")
+        model = models.efficientnet_b2(pretrained=False)
+        
+        # Recreate classifier architecture
+        num_features = model.classifier[1].in_features
+        model.classifier = nn.Sequential(
+            nn.Dropout(p=0.3, inplace=True),
+            nn.Linear(num_features, 256),
+            nn.BatchNorm1d(256, momentum=0.99, eps=0.001),
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=0.45),
+            nn.Linear(256, num_classes),
+        )
+        
+        # Load checkpoint
+        checkpoint = torch.load(model_path, map_location='cpu')
+        model.load_state_dict(checkpoint['model_state_dict'])
+        model.eval()
+        
+        PYTORCH_MODEL = model
+        print(f"✅ Food recognition system loaded successfully! ({num_classes} food categories)")
+        print(f"   Supported foods: {', '.join(PYTORCH_CLASSES[:5])}...")
+        
+    except ImportError:
+        print("⚠️  Advanced recognition unavailable. Using standard detection.")
+    except Exception as e:
+        print(f"❌ Failed to load recognition system: {e}")
+        import traceback
+        traceback.print_exc()
+
+# Load the models when app starts
 load_food_detection_model()
+load_pytorch_food_model()
 
 # ============= END FOOD DETECTION MODEL LOADING =============
 
@@ -452,7 +515,11 @@ def login():
             }), 401
         
         # Check password
-        if not bcrypt.checkpw(data['password'].encode('utf-8'), user['password']):
+        stored_password = user['password']
+        if isinstance(stored_password, str):
+            stored_password = stored_password.encode('utf-8')
+        
+        if not bcrypt.checkpw(data['password'].encode('utf-8'), stored_password):
             return jsonify({
                 'success': False,
                 'message': 'Invalid email or password'
@@ -538,6 +605,54 @@ def update_profile(current_user):
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/user/change-password', methods=['PUT'])
+@token_required
+def change_password(current_user):
+    """Change user password"""
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        if not data.get('currentPassword') or not data.get('newPassword'):
+            return jsonify({'error': 'Current password and new password are required'}), 400
+        
+        current_password = data.get('currentPassword')
+        new_password = data.get('newPassword')
+        
+        # Check if user uses Google sign-in (no password)
+        if current_user.get('auth_provider') == 'google':
+            return jsonify({'error': 'Cannot change password for Google sign-in accounts'}), 400
+        
+        # Verify current password
+        stored_password = current_user['password']
+        if isinstance(stored_password, str):
+            stored_password = stored_password.encode('utf-8')
+        
+        if not bcrypt.checkpw(current_password.encode('utf-8'), stored_password):
+            return jsonify({'error': 'Current password is incorrect'}), 401
+        
+        # Validate new password
+        if len(new_password) < 6:
+            return jsonify({'error': 'New password must be at least 6 characters long'}), 400
+        
+        # Hash new password
+        hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt())
+        
+        # Update password in database
+        users_collection.update_one(
+            {'_id': current_user['_id']},
+            {'$set': {
+                'password': hashed_password.decode('utf-8'),
+                'updated_at': datetime.now()
+            }}
+        )
+        
+        return jsonify({'message': 'Password changed successfully'}), 200
+        
+    except Exception as e:
+        print(f"Error changing password: {e}")
+        return jsonify({'error': 'Failed to change password'}), 500
 
 @app.route('/api/auth/google-signin', methods=['POST'])
 def google_signin():
@@ -2246,6 +2361,117 @@ def detect_food(current_user):
         
     except Exception as e:
         print(f"❌ Error in food detection: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': f'Food detection failed: {str(e)}'
+        }), 500
+
+@app.route('/api/detect-food-v2', methods=['POST'])
+@token_required
+def detect_food_v2(current_user):
+    """
+    Detect food type using advanced recognition system
+    Supports 80 Indian food varieties with high accuracy
+    """
+    try:
+        # Check if image file is present
+        if 'image' not in request.files:
+            return jsonify({
+                'success': False,
+                'message': 'No image file provided'
+            }), 400
+        
+        image_file = request.files['image']
+        
+        if image_file.filename == '':
+            return jsonify({
+                'success': False,
+                'message': 'No image selected'
+            }), 400
+        
+        # Check if recognition system is loaded
+        if PYTORCH_MODEL is None:
+            # Fallback to standard detection
+            if FOOD_MODEL is None:
+                return jsonify({
+                    'success': False,
+                    'message': 'Food recognition service unavailable'
+                }), 500
+            else:
+                print("⚠️  Advanced recognition unavailable, using standard detection")
+                return jsonify({
+                    'success': False,
+                    'message': 'Please use standard detection endpoint'
+                }), 500
+        
+        import torch
+        from torchvision import transforms
+        
+        # Read and process image
+        print("🔍 Processing image for food identification...")
+        img = Image.open(io.BytesIO(image_file.read()))
+        
+        # Convert to RGB if needed
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+        
+        # Image preprocessing
+        preprocess = transforms.Compose([
+            transforms.Resize(PYTORCH_IMG_SIZE),
+            transforms.ToTensor(),
+            transforms.Lambda(lambda x: x * 255.0),
+        ])
+        
+        img_tensor = preprocess(img)
+        img_tensor = img_tensor.unsqueeze(0)
+        
+        print(f"📊 Image prepared for analysis")
+        
+        # Perform recognition
+        print("🔍 Analyzing food...")
+        with torch.no_grad():
+            PYTORCH_MODEL.eval()
+            outputs = PYTORCH_MODEL(img_tensor)
+            probabilities = torch.nn.functional.softmax(outputs, dim=1)
+            confidence, predicted_idx = torch.max(probabilities, 1)
+            
+            predicted_idx = predicted_idx.item()
+            confidence = confidence.item()
+        
+        # Get food name from classes
+        if predicted_idx < len(PYTORCH_CLASSES):
+            detected_food = PYTORCH_CLASSES[predicted_idx]
+            # Format food name nicely (replace underscores with spaces, title case)
+            detected_food = detected_food.replace('_', ' ').title()
+        else:
+            detected_food = "Unknown"
+        
+        print(f"✅ Detected: {detected_food} (confidence: {confidence:.2%})")
+        
+        # Get top 3 predictions for additional info
+        top3_probs, top3_indices = torch.topk(probabilities[0], 3)
+        top3_predictions = []
+        for prob, idx in zip(top3_probs, top3_indices):
+            food_name = PYTORCH_CLASSES[idx.item()].replace('_', ' ').title()
+            top3_predictions.append({
+                'foodName': food_name,
+                'confidence': round(prob.item(), 3)
+            })
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'foodName': detected_food,
+                'confidence': round(confidence, 2),
+                'top3Predictions': top3_predictions,
+                'message': 'Food identified successfully'
+            }
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Error in PyTorch food detection: {str(e)}")
         import traceback
         traceback.print_exc()
         return jsonify({

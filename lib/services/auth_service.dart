@@ -394,4 +394,87 @@ class AuthService {
       return {'success': false, 'message': errorMessage};
     }
   }
+
+  // Change password
+  Future<Map<String, dynamic>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final token = await _storage.read(key: _tokenKey);
+
+      if (token == null) {
+        return {
+          'success': false,
+          'message': 'Not authenticated. Please login again.',
+        };
+      }
+
+      final url = '${ApiConfig.baseUrl}/user/change-password';
+      print('🔗 Change password URL: $url');
+      print('📤 Sending password change request');
+
+      final response = await http
+          .put(
+            Uri.parse(url),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+            body: json.encode({
+              'currentPassword': currentPassword,
+              'newPassword': newPassword,
+            }),
+          )
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              throw Exception('Connection timeout');
+            },
+          );
+
+      print('📥 Response status: ${response.statusCode}');
+      print('📥 Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('✅ Password changed successfully');
+
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Password changed successfully',
+        };
+      } else if (response.statusCode == 400) {
+        final error = json.decode(response.body);
+        print('❌ Validation error: ${error['error']}');
+        return {
+          'success': false,
+          'message': error['error'] ?? 'Invalid request',
+        };
+      } else if (response.statusCode == 401) {
+        final error = json.decode(response.body);
+        print('❌ Authentication error: ${error['error']}');
+        return {
+          'success': false,
+          'message': error['error'] ?? 'Current password is incorrect',
+        };
+      } else {
+        final error = json.decode(response.body);
+        print('❌ Password change error: ${error['error']}');
+        return {
+          'success': false,
+          'message': error['error'] ?? 'Failed to change password',
+        };
+      }
+    } catch (e) {
+      print('❌ Change password exception: $e');
+      String errorMessage = 'Connection error';
+      if (e.toString().contains('timeout')) {
+        errorMessage = 'Connection timeout - check if backend is running';
+      } else if (e.toString().contains('SocketException')) {
+        errorMessage = 'Cannot connect to server. Check your network.';
+      }
+      return {'success': false, 'message': errorMessage};
+    }
+  }
 }

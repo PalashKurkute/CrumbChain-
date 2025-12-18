@@ -64,9 +64,7 @@ class _LoginPageState extends State<LoginPage> {
         } else if (user.isDriver) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (context) => DriverHomePage(user: user),
-            ),
+            MaterialPageRoute(builder: (context) => DriverHomePage(user: user)),
           );
         }
       } else {
@@ -151,9 +149,7 @@ class _LoginPageState extends State<LoginPage> {
         } else if (user.isDriver) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (context) => DriverHomePage(user: user),
-            ),
+            MaterialPageRoute(builder: (context) => DriverHomePage(user: user)),
           );
         }
       } else {
@@ -168,7 +164,7 @@ class _LoginPageState extends State<LoginPage> {
               'Cannot connect to server.\nPlease check:\n'
               '• Backend is running\n'
               '• You are on the same WiFi network\n'
-              '• IP address is correct: 10.9.31.173';
+              '• IP address is correct: 192.168.0.100';
         }
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -194,7 +190,7 @@ class _LoginPageState extends State<LoginPage> {
           e.toString().contains('Failed host lookup')) {
         errorMessage =
             'Network Error!\n\n'
-            'Cannot reach server at 10.9.31.173:5000\n\n'
+            'Cannot reach server at 192.168.0.100:5000\n\n'
             'Checklist:\n'
             '✓ Backend server is running\n'
             '✓ Phone and computer on same WiFi\n'
@@ -209,7 +205,7 @@ class _LoginPageState extends State<LoginPage> {
         errorMessage =
             'Connection Refused!\n\n'
             'Backend server is not running on:\n'
-            'http://10.9.31.173:5000\n\n'
+            'http://192.168.0.100:5000\n\n'
             'Start the server with: python app.py';
       }
 
@@ -289,7 +285,7 @@ class _LoginPageState extends State<LoginPage> {
             'Check:\n'
             '• Backend running (python app.py)\n'
             '• Same WiFi network\n'
-            '• IP: 10.9.31.173';
+            '• IP: 192.168.0.100';
       } else if (e.toString().contains('timeout')) {
         errorMessage +=
             'Server not responding\n\n'
@@ -328,7 +324,9 @@ class _LoginPageState extends State<LoginPage> {
         child: SingleChildScrollView(
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              minHeight: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top,
+              minHeight:
+                  MediaQuery.of(context).size.height -
+                  MediaQuery.of(context).padding.top,
             ),
             child: IntrinsicHeight(
               child: Column(
@@ -388,49 +386,49 @@ class _LoginPageState extends State<LoginPage> {
 
                             // Name or Email Input
                             Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(30),
-                            border: Border.all(
-                              color: const Color(0xFFBDBDBD),
-                              width: 2,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(30),
+                                border: Border.all(
+                                  color: const Color(0xFFBDBDBD),
+                                  width: 2,
+                                ),
+                              ),
+                              child: TextField(
+                                controller: _emailController,
+                                decoration: InputDecoration(
+                                  hintText: 'Name Or Email',
+                                  hintStyle: TextStyle(
+                                    color: Colors.grey[400],
+                                    fontSize: 14,
+                                  ),
+                                  prefixIcon: Icon(
+                                    Icons.person_outline,
+                                    color: Colors.grey[600],
+                                    size: 20,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(30),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(30),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(30),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 16,
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
-                          child: TextField(
-                            controller: _emailController,
-                            decoration: InputDecoration(
-                              hintText: 'Name Or Email',
-                              hintStyle: TextStyle(
-                                color: Colors.grey[400],
-                                fontSize: 14,
-                              ),
-                              prefixIcon: Icon(
-                                Icons.person_outline,
-                                color: Colors.grey[600],
-                                size: 20,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(30),
-                                borderSide: BorderSide.none,
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(30),
-                                borderSide: BorderSide.none,
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(30),
-                                borderSide: BorderSide.none,
-                              ),
-                              filled: true,
-                              fillColor: Colors.white,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 16,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
+                            const SizedBox(height: 20),
 
                             // Password Input
                             Container(
@@ -538,9 +536,10 @@ class _LoginPageState extends State<LoginPage> {
                                         width: 20,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          valueColor: AlwaysStoppedAnimation<Color>(
-                                            Colors.white,
-                                          ),
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                Colors.white,
+                                              ),
                                         ),
                                       )
                                     : const Text(
@@ -601,7 +600,9 @@ class _LoginPageState extends State<LoginPage> {
                                 ],
                               ),
                               child: IconButton(
-                                onPressed: _isLoading ? null : _handleGoogleSignIn,
+                                onPressed: _isLoading
+                                    ? null
+                                    : _handleGoogleSignIn,
                                 icon: Image.asset(
                                   'assets/images/googlelogo.png',
                                   width: 24,
@@ -634,8 +635,9 @@ class _LoginPageState extends State<LoginPage> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) =>
-                                            SignUpPage(userType: widget.userType),
+                                        builder: (context) => SignUpPage(
+                                          userType: widget.userType,
+                                        ),
                                       ),
                                     );
                                   },

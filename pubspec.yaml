@@ -44,6 +44,9 @@ dependencies:
   # State management
   provider: ^6.1.1
   
+  # Shared preferences for theme storage
+  shared_preferences: ^2.2.2
+  
   # Google Generative AI (Gemini)
   google_generative_ai: ^0.2.2
   

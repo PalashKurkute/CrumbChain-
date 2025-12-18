@@ -13,7 +13,7 @@ class ApiConfig {
   static String get baseUrl {
     if (Platform.isAndroid) {
       const String localIp =
-          '192.168.0.101'; // Your computer's IP on local network (UPDATED)
+          '192.168.0.100'; // Your computer's IP on local network (UPDATED)
       const String emulatorIp = '10.0.2.2'; // Emulator special IP
       const String usbIp = 'localhost'; // USB connection via adb reverse
 
@@ -28,7 +28,7 @@ class ApiConfig {
     }
 
     // Fallback for other platforms
-    return 'http://10.105.149.166:5000/api';
+    return 'http://192.168.0.100:5000/api'; // Updated to match backend server
   }
 
   // API Endpoints
@@ -41,4 +41,6 @@ class ApiConfig {
   static const String createListing = '/listings';
   static const String getUserListings = '/listings?userOnly=true';
   static const String detectFood = '/detect-food';
+  static const String detectFoodV2 =
+      '/detect-food-v2'; // New PyTorch model (80 Indian foods, 72%+ accuracy)
 }

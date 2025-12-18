@@ -8,6 +8,7 @@ class FoodDetectionService {
   final _storage = const FlutterSecureStorage();
 
   /// Detect food type from image using ML model
+  /// Uses V2 endpoint with PyTorch EfficientNetB2 (80 Indian foods, 72%+ accuracy)
   Future<Map<String, dynamic>> detectFood(File imageFile) async {
     try {
       final token = await _storage.read(key: 'auth_token');
@@ -16,8 +17,9 @@ class FoodDetectionService {
         return {'success': false, 'message': 'Not authenticated'};
       }
 
-      final url = '${ApiConfig.baseUrl}${ApiConfig.detectFood}';
-      print('🔗 Food Detection URL: $url');
+      // Use new V2 endpoint with improved PyTorch model
+      final url = '${ApiConfig.baseUrl}${ApiConfig.detectFoodV2}';
+      print('🔗 Food Detection URL (V2 - PyTorch): $url');
 
       // Create multipart request
       var request = http.MultipartRequest('POST', Uri.parse(url));
@@ -64,11 +66,22 @@ class FoodDetectionService {
             '✅ Food detected: ${data['data']['foodName']} (Confidence: ${data['data']['confidence']})',
           );
 
+          // Log top 3 predictions if available (V2 endpoint feature)
+          if (data['data']['top3Predictions'] != null) {
+            print('📊 Top 3 predictions:');
+            for (var pred in data['data']['top3Predictions']) {
+              print('   - ${pred['foodName']}: ${pred['confidence']}');
+            }
+          }
+
           return {
             'success': true,
             'foodName': data['data']['foodName'],
             'confidence': data['data']['confidence'],
             'message': data['data']['message'],
+            'top3Predictions':
+                data['data']['top3Predictions'], // New field from V2
+            'modelVersion': data['data']['modelVersion'], // New field from V2
           };
         } else {
           print('❌ Food detection failed: ${data['message']}');
