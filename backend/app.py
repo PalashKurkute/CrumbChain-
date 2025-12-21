@@ -113,7 +113,7 @@ def load_food_detection_model():
         print(f"❌ Failed to load food detection model: {e}")
 
 def load_pytorch_food_model():
-    """Load the advanced food recognition system (80 Indian foods)"""
+    """Load the advanced food recognition system with 96.24% accuracy"""
     global PYTORCH_MODEL, PYTORCH_CLASSES
     
     try:
@@ -121,15 +121,28 @@ def load_pytorch_food_model():
         import torch.nn as nn
         from torchvision import models
         
-        model_path = os.path.join(os.path.dirname(__file__), 'models', 'best_food_model_reference.pth')
-        labels_path = os.path.join(os.path.dirname(__file__), 'models', 'labels_80.txt')
+        # Try to load combined model first (61 categories - 96.24% accuracy)
+        model_path_combined = os.path.join(os.path.dirname(__file__), 'models', 'best_food_model_combined.pth')
+        labels_path_combined = os.path.join(os.path.dirname(__file__), 'models', 'labels_combined.txt')
         
-        if not os.path.exists(model_path):
-            print(f"⚠️  Recognition system not found at {model_path}")
-            return
+        # Fallback to 80-category model
+        model_path_80 = os.path.join(os.path.dirname(__file__), 'models', 'best_food_model_reference.pth')
+        labels_path_80 = os.path.join(os.path.dirname(__file__), 'models', 'labels_80.txt')
         
-        if not os.path.exists(labels_path):
-            print(f"⚠️  Food categories file not found at {labels_path}")
+        # Determine which model to use
+        if os.path.exists(model_path_combined) and os.path.exists(labels_path_combined):
+            model_path = model_path_combined
+            labels_path = labels_path_combined
+            model_type = "Combined EfficientNet-B2 (61 categories, 96.24% accuracy - samosa, biryani, dosa, etc.)"
+        elif os.path.exists(model_path_80) and os.path.exists(labels_path_80):
+            model_path = model_path_80
+            labels_path = labels_path_80
+            model_type = "Traditional (80 categories - traditional Indian foods only)"
+        else:
+            print(f"⚠️  No recognition model found!")
+            print(f"   Tried: {model_path_combined}")
+            print(f"   Tried: {model_path_80}")
+            print(f"   Train a model using train_combined_model.py")
             return
         
         # Load food categories
@@ -139,7 +152,7 @@ def load_pytorch_food_model():
         num_classes = len(PYTORCH_CLASSES)
         
         # Initialize recognition system
-        print("🔄 Loading food recognition system...")
+        print(f"🔄 Loading food recognition system: {model_type}")
         model = models.efficientnet_b2(pretrained=False)
         
         # Recreate classifier architecture
@@ -160,7 +173,17 @@ def load_pytorch_food_model():
         
         PYTORCH_MODEL = model
         print(f"✅ Food recognition system loaded successfully! ({num_classes} food categories)")
-        print(f"   Supported foods: {', '.join(PYTORCH_CLASSES[:5])}...")
+        print(f"   Model type: {model_type}")
+        
+        # Show sample foods
+        sample_foods = PYTORCH_CLASSES[:8] if len(PYTORCH_CLASSES) >= 8 else PYTORCH_CLASSES
+        print(f"   Sample foods: {', '.join(sample_foods)}...")
+        
+        # Check if popular foods are included
+        popular_foods = ['samosa', 'pizza', 'burger', 'momos']
+        found_popular = [food for food in popular_foods if food in PYTORCH_CLASSES]
+        if found_popular:
+            print(f"   ✓ Includes popular foods: {', '.join(found_popular)}")
         
     except ImportError:
         print("⚠️  Advanced recognition unavailable. Using standard detection.")

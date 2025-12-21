@@ -347,96 +347,93 @@ class _DriverOrdersMapPageState extends State<DriverOrdersMapPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                    // Pickup location
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.restaurant,
-                          size: 14,
-                          color: Color(0xFFE07A3E),
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            'Pickup: ${order.userName}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[700],
-                              fontWeight: FontWeight.w600,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                  // Pickup location
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.restaurant,
+                        size: 14,
+                        color: Color(0xFFE07A3E),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Pickup: ${order.userName}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[700],
+                            fontWeight: FontWeight.w600,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 3),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
 
-                    // Delivery to
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.person,
-                          size: 14,
-                          color: Color(0xFF20B2AA),
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            'Deliver: ${order.claimedByName ?? "Receiver"}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[700],
-                              fontWeight: FontWeight.w600,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                  // Delivery to
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.person,
+                        size: 14,
+                        color: Color(0xFF20B2AA),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Deliver: ${order.claimedByName ?? "Receiver"}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[700],
+                            fontWeight: FontWeight.w600,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
+                  ),
 
-                    const SizedBox(height: 4),
+                  const SizedBox(height: 4),
 
-                    // Quantity and location
-                    Row(
-                      children: [
-                        Icon(Icons.fastfood, size: 12, color: Colors.grey[600]),
-                        const SizedBox(width: 4),
-                        Text(
-                          order.quantity,
+                  // Quantity and location
+                  Row(
+                    children: [
+                      Icon(Icons.fastfood, size: 12, color: Colors.grey[600]),
+                      const SizedBox(width: 4),
+                      Text(
+                        order.quantity,
+                        style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.location_on,
+                        size: 12,
+                        color: Colors.grey[600],
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          order.location,
                           style: TextStyle(
                             fontSize: 11,
                             color: Colors.grey[600],
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on,
-                          size: 12,
-                          color: Colors.grey[600],
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            order.location,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey[600],
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
+            ),
           ],
         ),
       ),
@@ -567,93 +564,31 @@ class _DriverOrdersMapPageState extends State<DriverOrdersMapPage> {
                   _buildDetailRow('Temperature', order.temperatureStatus),
                   _buildDetailRow('Packaging', order.packagingType),
 
-                  if (order.isPaidDonation) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFCEEDD),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFE07A3E)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.attach_money,
-                            color: Color(0xFFE07A3E),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Paid Donation: ₹${order.amount.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFFE07A3E),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-
                   const SizedBox(height: 24),
 
-                  // Action buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        flex: 2,
-                        child: ElevatedButton.icon(
-                          onPressed: () async {
-                            Navigator.pop(context);
-                            await _claimDelivery(order);
-                          },
-                          icon: const Icon(Icons.local_shipping, size: 22),
-                          label: const Text(
-                            'Claim Delivery',
-                            style: TextStyle(fontSize: 16),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF20B2AA),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 2,
-                          ),
-                        ),
+                  // Action button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        Navigator.pop(context);
+                        await _claimDelivery(order);
+                      },
+                      icon: const Icon(Icons.local_shipping, size: 22),
+                      label: const Text(
+                        'Claim Delivery',
+                        style: TextStyle(fontSize: 16),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 1,
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            // TODO: Implement directions functionality
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Opening directions...'),
-                                backgroundColor: Color(0xFFE07A3E),
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.directions, size: 20),
-                          label: const Text('Navigate'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFFE07A3E),
-                            side: const BorderSide(
-                              color: Color(0xFFE07A3E),
-                              width: 2,
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF20B2AA),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
+                        elevation: 2,
                       ),
-                    ],
+                    ),
                   ),
                 ],
               ),

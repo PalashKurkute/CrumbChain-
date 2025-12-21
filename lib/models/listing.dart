@@ -18,11 +18,11 @@ class Listing {
   final String status; // active, claimed, completed, cancelled
   final DateTime createdAt;
   final DateTime updatedAt;
-  
+
   // Optional: Geographic coordinates if available
   final double? latitude;
   final double? longitude;
-  
+
   // Donor rating information
   final double? donorRating;
   final int? donorTotalRatings;
@@ -32,7 +32,14 @@ class Listing {
   final String? claimedByEmail;
   final String? claimedByName;
   final DateTime? claimedAt;
-  final String? orderStatus; // pending_approval, approved, in_transit, out_for_delivery, delivered, completed
+  final String?
+  orderStatus; // pending_approval, approved, in_transit, out_for_delivery, delivered, completed
+
+  // Driver information (when driver claims delivery)
+  final String? driverId;
+  final String? driverEmail;
+  final String? driverName;
+  final DateTime? driverClaimedAt;
 
   Listing({
     required this.id,
@@ -63,6 +70,10 @@ class Listing {
     this.claimedByName,
     this.claimedAt,
     this.orderStatus,
+    this.driverId,
+    this.driverEmail,
+    this.driverName,
+    this.driverClaimedAt,
   });
 
   factory Listing.fromJson(Map<String, dynamic> json) {
@@ -101,6 +112,12 @@ class Listing {
           ? DateTime.parse(json['claimedAt'])
           : null,
       orderStatus: json['orderStatus'] as String?,
+      driverId: json['driverId'] as String?,
+      driverEmail: json['driverEmail'] as String?,
+      driverName: json['driverName'] as String?,
+      driverClaimedAt: json['driverClaimedAt'] is String
+          ? DateTime.parse(json['driverClaimedAt'])
+          : null,
     );
   }
 

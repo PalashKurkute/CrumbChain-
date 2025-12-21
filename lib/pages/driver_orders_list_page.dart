@@ -36,7 +36,9 @@ class _DriverOrdersListPageState extends State<DriverOrdersListPage> {
 
       if (result['success']) {
         final ordersData = result['data']['orders'] as List;
-        final orders = ordersData.map((json) => Listing.fromJson(json)).toList();
+        final orders = ordersData
+            .map((json) => Listing.fromJson(json))
+            .toList();
 
         setState(() {
           _availableOrders = orders;
@@ -90,9 +92,7 @@ class _DriverOrdersListPageState extends State<DriverOrdersListPage> {
       context: context,
       barrierDismissible: false,
       builder: (context) => const Center(
-        child: CircularProgressIndicator(
-          color: Color(0xFF20B2AA),
-        ),
+        child: CircularProgressIndicator(color: Color(0xFF20B2AA)),
       ),
     );
 
@@ -130,9 +130,7 @@ class _DriverOrdersListPageState extends State<DriverOrdersListPage> {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: () => _showOrderDetails(order),
         borderRadius: BorderRadius.circular(12),
@@ -155,7 +153,10 @@ class _DriverOrdersListPageState extends State<DriverOrdersListPage> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.green.shade50,
                       borderRadius: BorderRadius.circular(16),
@@ -192,10 +193,7 @@ class _DriverOrdersListPageState extends State<DriverOrdersListPage> {
                   const SizedBox(width: 8),
                   const Text(
                     'Pickup:',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                   ),
                   const SizedBox(width: 4),
                   Expanded(
@@ -212,18 +210,11 @@ class _DriverOrdersListPageState extends State<DriverOrdersListPage> {
               // Delivery to (receiver)
               Row(
                 children: [
-                  const Icon(
-                    Icons.person,
-                    size: 18,
-                    color: Color(0xFF20B2AA),
-                  ),
+                  const Icon(Icons.person, size: 18, color: Color(0xFF20B2AA)),
                   const SizedBox(width: 8),
                   const Text(
                     'Deliver to:',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                   ),
                   const SizedBox(width: 4),
                   Expanded(
@@ -291,10 +282,7 @@ class _DriverOrdersListPageState extends State<DriverOrdersListPage> {
           const SizedBox(width: 4),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade700,
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
           ),
         ],
       ),
@@ -356,7 +344,10 @@ class _DriverOrdersListPageState extends State<DriverOrdersListPage> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(order.description, style: const TextStyle(fontSize: 14)),
+                    Text(
+                      order.description,
+                      style: const TextStyle(fontSize: 14),
+                    ),
                     const SizedBox(height: 16),
                   ],
 
@@ -382,35 +373,6 @@ class _DriverOrdersListPageState extends State<DriverOrdersListPage> {
                   if (order.datePrepared != null)
                     _buildDetailRow('Prepared On', order.datePrepared!),
 
-                  if (order.isPaidDonation) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFCEEDD),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFE07A3E)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.attach_money,
-                            color: Color(0xFFE07A3E),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Paid Donation: ₹${order.amount.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFFE07A3E),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-
                   const SizedBox(height: 24),
 
                   // Action button
@@ -424,7 +386,10 @@ class _DriverOrdersListPageState extends State<DriverOrdersListPage> {
                       icon: const Icon(Icons.local_shipping, size: 22),
                       label: const Text(
                         'Claim This Delivery',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF20B2AA),
@@ -476,18 +441,10 @@ class _DriverOrdersListPageState extends State<DriverOrdersListPage> {
             width: 120,
             child: Text(
               '$label:',
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
             ),
           ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontSize: 14),
-            ),
-          ),
+          Expanded(child: Text(value, style: const TextStyle(fontSize: 14))),
         ],
       ),
     );
@@ -500,10 +457,7 @@ class _DriverOrdersListPageState extends State<DriverOrdersListPage> {
       appBar: AppBar(
         title: const Text(
           'Available Deliveries',
-          style: TextStyle(
-            color: Colors.black87,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
@@ -521,126 +475,114 @@ class _DriverOrdersListPageState extends State<DriverOrdersListPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(
-                    color: Color(0xFF20B2AA),
-                  ),
+                  CircularProgressIndicator(color: Color(0xFF20B2AA)),
                   SizedBox(height: 16),
                   Text('Loading available deliveries...'),
                 ],
               ),
             )
           : _errorMessage != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+                  const SizedBox(height: 16),
+                  Text(
+                    _errorMessage!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _fetchAvailableOrders,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF20B2AA),
+                    ),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            )
+          : _availableOrders.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.local_shipping_outlined,
+                    size: 80,
+                    color: Colors.grey[300],
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'No Deliveries Available',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Check back later for new delivery opportunities',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: _fetchAvailableOrders,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Refresh'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF20B2AA),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : Column(
+              children: [
+                // Header with count
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  color: const Color(0xFFFCEEDD),
+                  child: Row(
                     children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 64,
-                        color: Colors.red[300],
+                      const Icon(
+                        Icons.local_shipping,
+                        color: Color(0xFFE07A3E),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(width: 12),
                       Text(
-                        _errorMessage!,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _fetchAvailableOrders,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF20B2AA),
+                        '${_availableOrders.length} ${_availableOrders.length == 1 ? "Delivery" : "Deliveries"} Available',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFE07A3E),
                         ),
-                        child: const Text('Retry'),
                       ),
                     ],
                   ),
-                )
-              : _availableOrders.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.local_shipping_outlined,
-                            size: 80,
-                            color: Colors.grey[300],
-                          ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'No Deliveries Available',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Check back later for new delivery opportunities',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          ElevatedButton.icon(
-                            onPressed: _fetchAvailableOrders,
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('Refresh'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF20B2AA),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : Column(
-                      children: [
-                        // Header with count
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          color: const Color(0xFFFCEEDD),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.local_shipping,
-                                color: Color(0xFFE07A3E),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                '${_availableOrders.length} ${_availableOrders.length == 1 ? "Delivery" : "Deliveries"} Available',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFFE07A3E),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                ),
 
-                        // List of orders
-                        Expanded(
-                          child: RefreshIndicator(
-                            onRefresh: _fetchAvailableOrders,
-                            color: const Color(0xFF20B2AA),
-                            child: ListView.builder(
-                              padding: const EdgeInsets.only(top: 8, bottom: 16),
-                              itemCount: _availableOrders.length,
-                              itemBuilder: (context, index) {
-                                return _buildOrderCard(_availableOrders[index]);
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
+                // List of orders
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: _fetchAvailableOrders,
+                    color: const Color(0xFF20B2AA),
+                    child: ListView.builder(
+                      padding: const EdgeInsets.only(top: 8, bottom: 16),
+                      itemCount: _availableOrders.length,
+                      itemBuilder: (context, index) {
+                        return _buildOrderCard(_availableOrders[index]);
+                      },
                     ),
-      bottomNavigationBar: CommonFooter(
-        selectedIndex: 1,
-        user: widget.user,
-      ),
+                  ),
+                ),
+              ],
+            ),
+      bottomNavigationBar: CommonFooter(selectedIndex: 1, user: widget.user),
     );
   }
 }

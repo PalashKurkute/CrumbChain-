@@ -229,6 +229,15 @@ class _CreateListingPageState extends State<CreateListingPage> {
         final detectedFoodName = result['foodName'] ?? '';
         final confidence = result['confidence'] ?? 0.0;
 
+        // Check if confidence is below 50%
+        if (confidence < 0.50) {
+          // Show dialog for low accuracy
+          if (mounted) {
+            _showLowAccuracyDialog(detectedFoodName, confidence);
+          }
+          return;
+        }
+
         // Get expiry prediction for recognized food
         final expiryInfo = _getRecognizedFoodExpiry(detectedFoodName);
         final expiryDays = expiryInfo['days'] as int;
@@ -310,6 +319,127 @@ class _CreateListingPageState extends State<CreateListingPage> {
         );
       }
     }
+  }
+
+  void _showLowAccuracyDialog(String detectedFood, double confidence) {
+    final accuracyPercent = (confidence * 100).toStringAsFixed(0);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(
+                Icons.warning_amber_rounded,
+                color: Colors.orange.shade700,
+                size: 28,
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Low Recognition Accuracy',
+                  style: TextStyle(fontSize: 18),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'The AI detected "$detectedFood" but with only $accuracyPercent% confidence.',
+                style: const TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '⚠️ Accuracy below 50%',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'For better results, please either:',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '• Take a clearer photo of the food',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    Text(
+                      '• Enter the dish name manually',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            OutlinedButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+                // Clear the image to allow re-upload
+                setState(() {
+                  _imageFile = null;
+                  _foodTypeController.clear();
+                  _predictionConfidence = null;
+                  _predictedExpiryDays = null;
+                });
+              },
+              icon: const Icon(Icons.camera_alt),
+              label: const Text('Retake Photo'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFFE07A3E),
+                side: const BorderSide(color: Color(0xFFE07A3E)),
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+                // Keep the image but let user manually enter food name
+                setState(() {
+                  _foodTypeController.clear();
+                  _predictionConfidence = null;
+                });
+                // Focus on the food type field
+                FocusScope.of(context).requestFocus(FocusNode());
+              },
+              icon: const Icon(Icons.edit),
+              label: const Text('Enter Manually'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE07A3E),
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _predictFoodExpiry() async {

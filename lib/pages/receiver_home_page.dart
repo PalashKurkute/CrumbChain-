@@ -6,7 +6,6 @@ import 'create_requirements_page.dart';
 import 'listings_map_page.dart';
 import 'order_history_page.dart';
 import 'live_order_tracker_page.dart';
-import 'rewards_page.dart';
 
 class ReceiverHomePage extends StatefulWidget {
   final User user;
@@ -115,11 +114,6 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
                       label: 'Live Order Tracker',
                       color: const Color(0xFF48B2A5),
                     ),
-                    _buildFeatureCard(
-                      imagePath: 'assets/images/rewards.png',
-                      label: 'My Rewards',
-                      color: const Color(0xFFFFD700),
-                    ),
                   ],
                 ),
               ),
@@ -170,13 +164,6 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
             context,
             MaterialPageRoute(
               builder: (context) => LiveOrderTrackerPage(user: widget.user),
-            ),
-          );
-        } else if (label == 'My Rewards') {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => RewardsPage(user: widget.user),
             ),
           );
         }

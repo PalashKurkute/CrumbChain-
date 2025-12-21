@@ -40,6 +40,12 @@ class _NearbyPageState extends State<NearbyPage> {
     // Check permission status first
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkPermissionStatus();
+      // Force map to render after build
+      if (mounted) {
+        setState(() {
+          // Trigger rebuild to ensure map tiles load
+        });
+      }
     });
   }
 
@@ -1025,17 +1031,25 @@ class _NearbyPageState extends State<NearbyPage> {
                       initialZoom: 14.0,
                       minZoom: 5.0,
                       maxZoom: 18.0,
+                      interactionOptions: const InteractionOptions(
+                        flags: InteractiveFlag.all,
+                      ),
                     ),
                     children: [
                       TileLayer(
                         urlTemplate:
                             'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                         userAgentPackageName: 'com.crumbchain.app',
+                        maxNativeZoom: 19,
+                        maxZoom: 19,
+                        tileProvider: NetworkTileProvider(),
                         errorImage: const NetworkImage(
                           'https://via.placeholder.com/256?text=Map+Tile+Error',
                         ),
                         fallbackUrl:
                             'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        keepBuffer: 2,
+                        retinaMode: true,
                       ),
                       MarkerLayer(markers: _markers),
                       // Current position marker

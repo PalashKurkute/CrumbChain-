@@ -42,5 +42,5 @@ class ApiConfig {
   static const String getUserListings = '/listings?userOnly=true';
   static const String detectFood = '/detect-food';
   static const String detectFoodV2 =
-      '/detect-food-v2'; // New PyTorch model (80 Indian foods, 72%+ accuracy)
+      '/detect-food-v2'; // EfficientNet-B2 model (61 Indian foods, 96.24% accuracy)
 }

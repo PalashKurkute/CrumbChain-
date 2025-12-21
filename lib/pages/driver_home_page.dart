@@ -5,7 +5,6 @@ import '../widgets/driver_profile_menu.dart';
 import 'driver_orders_map_page.dart';
 import 'driver_current_orders_page.dart';
 import 'driver_order_history_page.dart';
-import 'driver_perks_rewards_page.dart';
 import 'driver_impact_stories_page.dart';
 
 class DriverHomePage extends StatefulWidget {
@@ -106,11 +105,6 @@ class _DriverHomePageState extends State<DriverHomePage> {
                       color: const Color(0xFF20B2AA),
                     ),
                     _buildFeatureCard(
-                      imagePath: 'assets/images/incentives.png',
-                      label: 'Perks & Rewards',
-                      color: const Color(0xFFFFD700),
-                    ),
-                    _buildFeatureCard(
                       imagePath: 'assets/images/success-stories.png',
                       label: 'Impact Stories',
                       color: const Color(0xFF9C27B0),
@@ -146,13 +140,6 @@ class _DriverHomePageState extends State<DriverHomePage> {
             context,
             MaterialPageRoute(
               builder: (context) => DriverOrderHistoryPage(user: widget.user),
-            ),
-          );
-        } else if (label == 'Perks & Rewards') {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => DriverPerksRewardsPage(user: widget.user),
             ),
           );
         } else if (label == 'Impact Stories') {
@@ -240,7 +227,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
               style: TextStyle(fontSize: 14),
             ),
             const SizedBox(height: 20),
-            
+
             // Map View Option
             _buildViewOption(
               context: context,
@@ -253,13 +240,14 @@ class _DriverHomePageState extends State<DriverHomePage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => DriverOrdersMapPage(user: widget.user),
+                    builder: (context) =>
+                        DriverOrdersMapPage(user: widget.user),
                   ),
                 );
               },
             ),
             const SizedBox(height: 12),
-            
+
             // Current Orders Option
             _buildViewOption(
               context: context,
@@ -272,7 +260,8 @@ class _DriverHomePageState extends State<DriverHomePage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => DriverCurrentOrdersPage(user: widget.user),
+                    builder: (context) =>
+                        DriverCurrentOrdersPage(user: widget.user),
                   ),
                 );
               },
@@ -333,10 +322,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                   const SizedBox(height: 4),
                   Text(
                     description,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                   ),
                 ],
               ),

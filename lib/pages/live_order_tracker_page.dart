@@ -42,17 +42,22 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
 
   Future<void> _loadActiveOrders() async {
     try {
+      print('🔄 Loading active orders...');
       final response = await _orderService.getActiveOrders();
-      
+      print('📦 Response: $response');
+
       if (response['success']) {
+        final orders = response['data']['activeOrders'] ?? [];
+        print('✅ Found ${orders.length} active orders');
         if (mounted) {
           setState(() {
-            _activeOrders = response['data']['activeOrders'] ?? [];
+            _activeOrders = orders;
             _isLoading = false;
             _errorMessage = null;
           });
         }
       } else {
+        print('❌ Error: ${response['message']}');
         if (mounted) {
           setState(() {
             _errorMessage = response['message'];
@@ -60,10 +65,11 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
           });
         }
       }
-      
+
       // Also load recent completed orders
       await _loadRecentOrders();
     } catch (e) {
+      print('💥 Exception loading orders: $e');
       if (mounted) {
         setState(() {
           _errorMessage = 'Failed to load orders: $e';
@@ -76,14 +82,17 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
   Future<void> _loadRecentOrders() async {
     try {
       final response = await _orderService.getMyOrders();
-      
+
       if (response['success']) {
         final receivedOrders = response['data']['receivedOrders'] ?? [];
-        final completed = receivedOrders.where((order) {
-          final status = order['orderStatus'];
-          return status == 'delivered' || status == 'completed';
-        }).take(5).toList();
-        
+        final completed = receivedOrders
+            .where((order) {
+              final status = order['orderStatus'];
+              return status == 'delivered' || status == 'completed';
+            })
+            .take(5)
+            .toList();
+
         if (mounted) {
           setState(() {
             _recentOrders = completed;
@@ -95,6 +104,7 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
       print('Error loading recent orders: $e');
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -124,258 +134,269 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
                 ),
               )
             : _errorMessage != null
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.error_outline, size: 64, color: Colors.grey.shade400),
-                        const SizedBox(height: 16),
-                        Text(
-                          _errorMessage!,
-                          style: TextStyle(color: Colors.grey.shade600),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: _loadActiveOrders,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF20B2AA),
-                            foregroundColor: Colors.white,
-                          ),
-                          child: const Text('Retry'),
-                        ),
-                      ],
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: Colors.grey.shade400,
                     ),
-                  )
-                : SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    child: Column(
-                      children: [
-                        // Top section with logo
-                        Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: Image.asset(
-                            'assets/images/logo.png',
-                            width: 100,
-                            height: 100,
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) {
-                              return const Icon(
-                                Icons.volunteer_activism,
-                                size: 80,
-                                color: Color(0xFFE07A3E),
-                              );
-                            },
-                          ),
-                        ),
+                    const SizedBox(height: 16),
+                    Text(
+                      _errorMessage!,
+                      style: TextStyle(color: Colors.grey.shade600),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _loadActiveOrders,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF20B2AA),
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              )
+            : SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  children: [
+                    // Top section with logo
+                    Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(
+                            Icons.volunteer_activism,
+                            size: 80,
+                            color: Color(0xFFE07A3E),
+                          );
+                        },
+                      ),
+                    ),
 
-                        // Cream background section with icon and description
-                        Container(
-                          width: double.infinity,
-                          color: const Color(0xFFFCEEDD),
-                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                          child: Column(
-                            children: [
-                              // Feature icon
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.05),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Image.asset(
-                                  'assets/images/live-tracker.png',
-                                  width: 40,
-                                  height: 40,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return const Icon(
-                                      Icons.local_shipping,
-                                      size: 40,
-                                      color: Colors.black87,
-                                    );
-                                  },
-                                ),
-                              ),
-
-                              const SizedBox(height: 12),
-
-                              const Text(
-                                'Live Order Tracker',
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
+                    // Cream background section with icon and description
+                    Container(
+                      width: double.infinity,
+                      color: const Color(0xFFFCEEDD),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 16,
+                        horizontal: 16,
+                      ),
+                      child: Column(
+                        children: [
+                          // Feature icon
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.05),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Image.asset(
+                              'assets/images/live-tracker.png',
+                              width: 40,
+                              height: 40,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Icon(
+                                  Icons.local_shipping,
+                                  size: 40,
                                   color: Colors.black87,
-                                ),
-                              ),
-
-                              const SizedBox(height: 8),
-
-                              Text(
-                                'Track your active deliveries in real-time',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey.shade600,
-                                  height: 1.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // Active Orders Section
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 4,
-                                height: 24,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF20B2AA),
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              const Text(
-                                'Active Deliveries',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              const Spacer(),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF20B2AA).withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  '${_activeOrders.length} Active',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF20B2AA),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // Body Content - Active Orders
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: _activeOrders.isEmpty
-                              ? Center(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(32.0),
-                                    child: Column(
-                                      children: [
-                                        Icon(Icons.inbox_outlined,
-                                            size: 64, color: Colors.grey.shade300),
-                                        const SizedBox(height: 16),
-                                        Text(
-                                          'No active deliveries',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            color: Colors.grey.shade600,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          'Claim listings to start tracking',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.grey.shade500,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                )
-                              : Column(
-                                  children: _activeOrders.map((order) {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(bottom: 12),
-                                      child: _buildCompactOrderCard(order),
-                                    );
-                                  }).toList(),
-                                ),
-                        ),
-
-                        if (_recentOrders.isNotEmpty) ...[
-                          const SizedBox(height: 24),
-
-                          // Recent Deliveries Section
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 4,
-                                  height: 24,
-                                  decoration: BoxDecoration(
-                                    color: Colors.green,
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                const Text(
-                                  'Recent Deliveries',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                              ],
+                                );
+                              },
                             ),
                           ),
 
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 12),
 
-                          // Recent Completed Orders
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                            child: Column(
-                              children: _recentOrders.map((order) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 12),
-                                  child: _buildRecentDeliveryCard(order),
-                                );
-                              }).toList(),
+                          const Text(
+                            'Live Order Tracker',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+
+                          const SizedBox(height: 8),
+
+                          Text(
+                            'Track your active deliveries in real-time',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                              height: 1.5,
                             ),
                           ),
                         ],
-
-                        const SizedBox(height: 24),
-                      ],
+                      ),
                     ),
-                  ),
+
+                    const SizedBox(height: 24),
+
+                    // Active Orders Section
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 4,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF20B2AA),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'Active Deliveries',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const Spacer(),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF20B2AA).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '${_activeOrders.length} Active',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF20B2AA),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Body Content - Active Orders
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: _activeOrders.isEmpty
+                          ? Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(32.0),
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      Icons.inbox_outlined,
+                                      size: 64,
+                                      color: Colors.grey.shade300,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'No active deliveries',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Claim listings to start tracking',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey.shade500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                          : Column(
+                              children: _activeOrders.map((order) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: _buildCompactOrderCard(order),
+                                );
+                              }).toList(),
+                            ),
+                    ),
+
+                    if (_recentOrders.isNotEmpty) ...[
+                      const SizedBox(height: 24),
+
+                      // Recent Deliveries Section
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 4,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: Colors.green,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Text(
+                              'Recent Deliveries',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Recent Completed Orders
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Column(
+                          children: _recentOrders.map((order) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: _buildRecentDeliveryCard(order),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
       ),
       bottomNavigationBar: CommonFooter(user: widget.user),
     );
   }
 
   Widget _buildCompactOrderCard(dynamic order) {
-    final String orderId = order['_id']?.substring(0, 8).toUpperCase() ?? 'ORDER';
+    final String orderId =
+        order['_id']?.substring(0, 8).toUpperCase() ?? 'ORDER';
     final String foodName = order['mealType'] ?? 'Food Item';
     final String donor = order['userName'] ?? 'Anonymous Donor';
     final String quantity = order['quantity'] ?? 'N/A';
     final String status = order['orderStatus'] ?? 'approved';
-    
+
     final Color statusColor = Color(OrderService.getStatusColor(status));
-    
+
     IconData statusIcon;
     switch (status) {
       case 'approved':
@@ -390,7 +411,7 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
       default:
         statusIcon = Icons.info;
     }
-    
+
     // Calculate progress based on status
     double progress;
     switch (status) {
@@ -406,7 +427,7 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
       default:
         progress = 0.1;
     }
-    
+
     // Calculate ETA (simplified)
     String eta;
     switch (status) {
@@ -422,12 +443,12 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
       default:
         eta = 'TBD';
     }
-    
+
     // Simulated picker info (in production, this would come from backend)
     String? pickerName;
     String? pickerVehicle;
     double? pickerRating;
-    
+
     if (status == 'in_transit' || status == 'out_for_delivery') {
       pickerName = 'Delivery Partner';
       pickerVehicle = 'Vehicle';
@@ -462,11 +483,7 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
                     color: statusColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(
-                    statusIcon,
-                    color: statusColor,
-                    size: 20,
-                  ),
+                  child: Icon(statusIcon, color: statusColor, size: 20),
                 ),
                 const SizedBox(width: 12),
                 // Order Info
@@ -508,8 +525,11 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
                       const SizedBox(height: 3),
                       Row(
                         children: [
-                          Icon(Icons.store,
-                              size: 12, color: Colors.grey.shade600),
+                          Icon(
+                            Icons.store,
+                            size: 12,
+                            color: Colors.grey.shade600,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             donor,
@@ -544,11 +564,7 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
                   ),
                   child: Column(
                     children: [
-                      Icon(
-                        Icons.timer,
-                        size: 14,
-                        color: statusColor,
-                      ),
+                      Icon(Icons.timer, size: 14, color: statusColor),
                       const SizedBox(height: 2),
                       Text(
                         eta,
@@ -710,11 +726,7 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.search,
-                      size: 14,
-                      color: Colors.orange.shade700,
-                    ),
+                    Icon(Icons.search, size: 14, color: Colors.orange.shade700),
                     const SizedBox(width: 6),
                     Text(
                       'Finding delivery partner...',
@@ -738,7 +750,9 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
     final String foodName = order['mealType'] ?? 'Food Item';
     final String donor = order['userName'] ?? 'Anonymous Donor';
     final String quantity = order['quantity'] ?? 'N/A';
-    final String deliveredTime = _formatTimeAgo(order['deliveredAt'] ?? order['completedAt']);
+    final String deliveredTime = _formatTimeAgo(
+      order['deliveredAt'] ?? order['completedAt'],
+    );
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -798,10 +812,7 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: const Color(0xFF20B2AA).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(6),
@@ -829,10 +840,7 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
               const SizedBox(height: 4),
               Text(
                 deliveredTime,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.grey.shade600,
-                ),
+                style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
               ),
             ],
           ),
@@ -843,7 +851,7 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
 
   Future<void> _refreshOrders() async {
     await _loadActiveOrders();
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -856,8 +864,9 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
   }
 
   void _showOrderDetails(dynamic order) {
-    final String orderId = order['_id']?.substring(0, 8).toUpperCase() ?? 'ORDER';
-    
+    final String orderId =
+        order['_id']?.substring(0, 8).toUpperCase() ?? 'ORDER';
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -1007,7 +1016,7 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
 
   String _formatTimeAgo(dynamic dateValue) {
     if (dateValue == null) return 'Recently';
-    
+
     try {
       DateTime date;
       if (dateValue is String) {
@@ -1017,10 +1026,10 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
       } else {
         return 'Recently';
       }
-      
+
       final now = DateTime.now();
       final difference = now.difference(date);
-      
+
       if (difference.inMinutes < 60) {
         return '${difference.inMinutes} mins ago';
       } else if (difference.inHours < 24) {
@@ -1038,7 +1047,7 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
   void _showRatingDialog(Map<String, dynamic> order) {
     double rating = 5.0;
     final TextEditingController reviewController = TextEditingController();
-    
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -1113,7 +1122,9 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
                     // Show completion message without rating
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Order completed! You can rate later from notifications.'),
+                        content: Text(
+                          'Order completed! You can rate later from notifications.',
+                        ),
                         backgroundColor: Colors.green,
                       ),
                     );
@@ -1123,7 +1134,7 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
                 ElevatedButton(
                   onPressed: () async {
                     Navigator.pop(dialogContext);
-                    
+
                     // Submit rating
                     final result = await _ratingService.submitRating(
                       listingId: order['_id'],
@@ -1131,19 +1142,23 @@ class _LiveOrderTrackerPageState extends State<LiveOrderTrackerPage> {
                       rating: rating,
                       review: reviewController.text,
                     );
-                    
+
                     if (mounted) {
                       if (result['success'] == true) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Thank you for your ${rating.toInt()}-star rating! 🎉'),
+                            content: Text(
+                              'Thank you for your ${rating.toInt()}-star rating! 🎉',
+                            ),
                             backgroundColor: Colors.green,
                           ),
                         );
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text(result['message'] ?? 'Failed to submit rating'),
+                            content: Text(
+                              result['message'] ?? 'Failed to submit rating',
+                            ),
                             backgroundColor: Colors.red,
                           ),
                         );

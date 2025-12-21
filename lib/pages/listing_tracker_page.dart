@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../widgets/common_footer.dart';
 import '../models/user.dart';
 import '../models/listing.dart';
@@ -19,11 +20,22 @@ class _ListingTrackerPageState extends State<ListingTrackerPage> {
   List<Listing> _activeListings = [];
   bool _isLoading = true;
   String? _errorMessage;
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
     _loadActiveListings();
+    // Auto-refresh every 30 seconds to show real-time updates
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      _loadActiveListings();
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadActiveListings() async {
@@ -33,10 +45,10 @@ class _ListingTrackerPageState extends State<ListingTrackerPage> {
     });
 
     try {
-      // Get user's listings with status: active, claimed (not completed)
+      // Get user's listings with status: active, claimed, approved, in_transit, out_for_delivery (not completed/delivered)
       final result = await _listingService.getListings(
         userOnly: true,
-        status: 'active,claimed',
+        status: 'active,claimed,approved,in_transit,out_for_delivery',
       );
 
       if (result['success'] == true) {
@@ -72,6 +84,13 @@ class _ListingTrackerPageState extends State<ListingTrackerPage> {
           icon: const Icon(Icons.arrow_back, color: Colors.black87),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Color(0xFFE07A3E)),
+            onPressed: _isLoading ? null : _loadActiveListings,
+            tooltip: 'Refresh',
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -148,6 +167,71 @@ class _ListingTrackerPageState extends State<ListingTrackerPage> {
               ),
             ),
 
+            // Live tracking indicator
+            if (_activeListings.any(
+              (listing) =>
+                  listing.orderStatus == 'in_transit' ||
+                  listing.orderStatus == 'out_for_delivery',
+            )) ...[
+              const SizedBox(height: 16),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 16,
+                ),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF20B2AA), Color(0xFF48B2A5)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF20B2AA).withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Container(
+                        margin: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.red.withOpacity(0.5),
+                              blurRadius: 4,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text(
+                      '🚚 Live Tracking Active - Auto-updating every 30s',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
             const SizedBox(height: 24),
 
             // Body Content - Active Listings from Backend
@@ -160,80 +244,80 @@ class _ListingTrackerPageState extends State<ListingTrackerPage> {
                       ),
                     )
                   : _errorMessage != null
-                      ? Center(
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.error_outline,
-                                size: 64,
-                                color: Colors.grey.shade400,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                _errorMessage!,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              ElevatedButton(
-                                onPressed: _loadActiveListings,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFE07A3E),
-                                  foregroundColor: Colors.white,
-                                ),
-                                child: const Text('Retry'),
-                              ),
-                            ],
+                  ? Center(
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 64,
+                            color: Colors.grey.shade400,
                           ),
-                        )
-                      : _activeListings.isEmpty
-                          ? Center(
-                              child: Column(
-                                children: [
-                                  Icon(
-                                    Icons.inbox_outlined,
-                                    size: 64,
-                                    color: Colors.grey.shade400,
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'No active listings',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Create a new listing to get started',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.grey.shade500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          : RefreshIndicator(
-                              onRefresh: _loadActiveListings,
-                              color: const Color(0xFFE07A3E),
-                              child: ListView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: _activeListings.length,
-                                itemBuilder: (context, index) {
-                                  final listing = _activeListings[index];
-                                  return Padding(
-                                    padding: const EdgeInsets.only(bottom: 12),
-                                    child: _buildListingCard(listing),
-                                  );
-                                },
-                              ),
+                          const SizedBox(height: 16),
+                          Text(
+                            _errorMessage!,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 14,
                             ),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: _loadActiveListings,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFE07A3E),
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : _activeListings.isEmpty
+                  ? Center(
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.inbox_outlined,
+                            size: 64,
+                            color: Colors.grey.shade400,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No active listings',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Create a new listing to get started',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _loadActiveListings,
+                      color: const Color(0xFFE07A3E),
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _activeListings.length,
+                        itemBuilder: (context, index) {
+                          final listing = _activeListings[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _buildListingCard(listing),
+                          );
+                        },
+                      ),
+                    ),
             ),
           ],
         ),
@@ -246,13 +330,28 @@ class _ListingTrackerPageState extends State<ListingTrackerPage> {
     // Determine status display based on listing status
     String statusText;
     Color statusColor;
-    
+    IconData? statusIcon;
+
     if (listing.status == 'claimed') {
       statusText = 'Claimed - Pending Approval';
       statusColor = Colors.orange;
+      statusIcon = Icons.pending;
+    } else if (listing.status == 'approved') {
+      statusText = 'Approved - Awaiting Driver';
+      statusColor = Colors.blue;
+      statusIcon = Icons.check_circle;
+    } else if (listing.status == 'in_transit') {
+      statusText = 'Driver En Route';
+      statusColor = const Color(0xFF20B2AA);
+      statusIcon = Icons.local_shipping;
+    } else if (listing.status == 'out_for_delivery') {
+      statusText = 'Out for Delivery';
+      statusColor = const Color(0xFF20B2AA);
+      statusIcon = Icons.delivery_dining;
     } else if (listing.status == 'active') {
       statusText = 'Active';
       statusColor = Colors.green;
+      statusIcon = Icons.check_circle;
     } else {
       statusText = listing.status;
       statusColor = Colors.grey;
@@ -262,11 +361,14 @@ class _ListingTrackerPageState extends State<ListingTrackerPage> {
     final Duration difference = DateTime.now().difference(listing.createdAt);
     String timeAgo;
     if (difference.inDays > 0) {
-      timeAgo = '${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago';
+      timeAgo =
+          '${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago';
     } else if (difference.inHours > 0) {
-      timeAgo = '${difference.inHours} hour${difference.inHours > 1 ? 's' : ''} ago';
+      timeAgo =
+          '${difference.inHours} hour${difference.inHours > 1 ? 's' : ''} ago';
     } else {
-      timeAgo = '${difference.inMinutes} minute${difference.inMinutes > 1 ? 's' : ''} ago';
+      timeAgo =
+          '${difference.inMinutes} minute${difference.inMinutes > 1 ? 's' : ''} ago';
     }
 
     return Container(
@@ -341,13 +443,22 @@ class _ListingTrackerPageState extends State<ListingTrackerPage> {
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: statusColor),
                     ),
-                    child: Text(
-                      statusText,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: statusColor,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (statusIcon != null) ...[
+                          Icon(statusIcon, size: 14, color: statusColor),
+                          const SizedBox(width: 4),
+                        ],
+                        Text(
+                          statusText,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: statusColor,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -358,10 +469,7 @@ class _ListingTrackerPageState extends State<ListingTrackerPage> {
           if (listing.description.isNotEmpty) ...[
             Text(
               listing.description,
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey.shade700,
-              ),
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -412,8 +520,188 @@ class _ListingTrackerPageState extends State<ListingTrackerPage> {
               ),
             ],
           ),
+
+          // Driver information section (if driver has claimed the delivery)
+          if (listing.driverId != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF20B2AA).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFF20B2AA)),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF20B2AA),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.local_shipping,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Driver En Route',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF20B2AA),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              listing.driverName ?? 'Driver',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            if (listing.driverClaimedAt != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                'Picked up ${_formatTime(listing.driverClaimedAt!)}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  // ETA Display
+                  if (listing.driverClaimedAt != null &&
+                      (listing.orderStatus == 'in_transit' ||
+                          listing.orderStatus == 'out_for_delivery')) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.access_time,
+                                size: 16,
+                                color: Color(0xFF20B2AA),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Estimated Arrival',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade700,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            _calculateETA(listing.driverClaimedAt!),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF20B2AA),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+
+          // Receiver information (if order is claimed by receiver)
+          if (listing.claimedByName != null && listing.driverId == null) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.person, size: 16, color: Colors.orange.shade700),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Claimed by: ${listing.claimedByName}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.orange.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  String _formatTime(DateTime time) {
+    final Duration difference = DateTime.now().difference(time);
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes} min ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours} hr ago';
+    } else {
+      return '${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago';
+    }
+  }
+
+  String _calculateETA(DateTime pickupTime) {
+    // Calculate estimated arrival based on pickup time
+    // Assuming average delivery takes 20-40 minutes from pickup
+    final Duration timeSincePickup = DateTime.now().difference(pickupTime);
+    final int minutesSincePickup = timeSincePickup.inMinutes;
+
+    // Estimated delivery window: 20-40 minutes from pickup
+    const int minDeliveryTime = 20;
+    const int maxDeliveryTime = 40;
+
+    if (minutesSincePickup < minDeliveryTime) {
+      // Still within the minimum time
+      final int remainingMin = minDeliveryTime - minutesSincePickup;
+      final int remainingMax = maxDeliveryTime - minutesSincePickup;
+      return '$remainingMin-$remainingMax min';
+    } else if (minutesSincePickup < maxDeliveryTime) {
+      // Within the delivery window
+      final int remainingMax = maxDeliveryTime - minutesSincePickup;
+      return '5-$remainingMax min';
+    } else {
+      // Past the estimated window - should arrive soon
+      return 'Arriving soon';
+    }
   }
 }
