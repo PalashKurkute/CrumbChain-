@@ -40,9 +40,9 @@ class Config:
     
     # Training parameters
     BATCH_SIZE = 32  # Fastest speed for RTX 4050 (6GB VRAM)
-    NUM_EPOCHS = 50
-    LEARNING_RATE = 0.001
-    WEIGHT_DECAY = 1e-4
+    NUM_EPOCHS = 40  # Reduced from 50 (will stop early anyway)
+    LEARNING_RATE = 0.0005  # Reduced for better convergence
+    WEIGHT_DECAY = 5e-4  # Increased for better regularization
     
     # Model parameters
     IMG_SIZE = 224
@@ -55,9 +55,9 @@ class Config:
     # Device
     DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
-    # Early stopping
-    PATIENCE = 10
-    MIN_DELTA = 0.001
+    # Early stopping - OPTIMIZED
+    PATIENCE = 7  # Reduced from 10 (stop sooner)
+    MIN_DELTA = 0.001  # Minimum improvement required
 
 # Create checkpoint directory
 os.makedirs(Config.CHECKPOINT_DIR, exist_ok=True)
@@ -275,10 +275,12 @@ def get_transforms(is_training=True):
             transforms.Resize((256, 256)),
             transforms.RandomCrop(224),
             transforms.RandomHorizontalFlip(p=0.5),
-            transforms.RandomRotation(15),
-            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+            transforms.RandomRotation(20),  # Increased from 15 to 20
+            transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.15),  # Increased
+            transforms.RandomAffine(degrees=0, translate=(0.1, 0.1)),  # Added translation
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            transforms.RandomErasing(p=0.2, scale=(0.02, 0.2))  # Added random erasing
         ])
     else:
         return transforms.Compose([
@@ -289,20 +291,24 @@ def get_transforms(is_training=True):
 
 # Model creation
 def create_model(num_classes):
-    """Create EfficientNet-B2 model with custom classifier"""
+    """Create EfficientNet-B2 model with custom classifier - OPTIMIZED"""
     model = models.efficientnet_b2(pretrained=True)
     
     # Get the number of features in the last layer
     num_features = model.classifier[1].in_features
     
-    # Replace classifier
+    # Replace classifier with deeper, more regularized architecture
     model.classifier = nn.Sequential(
         nn.Dropout(p=0.3, inplace=True),
-        nn.Linear(num_features, 256),
-        nn.BatchNorm1d(256, momentum=0.99, eps=0.001),
+        nn.Linear(num_features, 1024),  # Increased from 256 to 1024
+        nn.BatchNorm1d(1024, momentum=0.99, eps=0.001),
         nn.ReLU(inplace=True),
-        nn.Dropout(p=0.45),
-        nn.Linear(256, num_classes),
+        nn.Dropout(p=0.5),  # Increased from 0.45 to 0.5
+        nn.Linear(1024, 512),  # Added intermediate layer
+        nn.BatchNorm1d(512, momentum=0.99, eps=0.001),
+        nn.ReLU(inplace=True),
+        nn.Dropout(p=0.4),  # Added dropout
+        nn.Linear(512, num_classes),
     )
     
     return model

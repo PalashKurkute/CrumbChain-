@@ -113,7 +113,7 @@ def load_food_detection_model():
         print(f"❌ Failed to load food detection model: {e}")
 
 def load_pytorch_food_model():
-    """Load the advanced food recognition system with 96.24% accuracy"""
+    """Load the advanced food recognition system with 88.80% accuracy"""
     global PYTORCH_MODEL, PYTORCH_CLASSES
     
     try:
@@ -121,7 +121,7 @@ def load_pytorch_food_model():
         import torch.nn as nn
         from torchvision import models
         
-        # Try to load combined model first (61 categories - 96.24% accuracy)
+        # Try to load combined model first (61 categories - 88.80% accuracy)
         model_path_combined = os.path.join(os.path.dirname(__file__), 'models', 'best_food_model_combined.pth')
         labels_path_combined = os.path.join(os.path.dirname(__file__), 'models', 'labels_combined.txt')
         
@@ -133,7 +133,7 @@ def load_pytorch_food_model():
         if os.path.exists(model_path_combined) and os.path.exists(labels_path_combined):
             model_path = model_path_combined
             labels_path = labels_path_combined
-            model_type = "Combined EfficientNet-B2 (61 categories, 96.24% accuracy - samosa, biryani, dosa, etc.)"
+            model_type = "EfficientNet-B2 (61 categories, 88.80% accuracy - cleaned dataset)"
         elif os.path.exists(model_path_80) and os.path.exists(labels_path_80):
             model_path = model_path_80
             labels_path = labels_path_80
@@ -155,15 +155,19 @@ def load_pytorch_food_model():
         print(f"🔄 Loading food recognition system: {model_type}")
         model = models.efficientnet_b2(pretrained=False)
         
-        # Recreate classifier architecture
+        # Recreate classifier architecture (must match training architecture!)
         num_features = model.classifier[1].in_features
         model.classifier = nn.Sequential(
             nn.Dropout(p=0.3, inplace=True),
-            nn.Linear(num_features, 256),
-            nn.BatchNorm1d(256, momentum=0.99, eps=0.001),
+            nn.Linear(num_features, 1024),  # Updated to match trained model
+            nn.BatchNorm1d(1024),
             nn.ReLU(inplace=True),
-            nn.Dropout(p=0.45),
-            nn.Linear(256, num_classes),
+            nn.Dropout(p=0.5),  # Updated dropout
+            nn.Linear(1024, 512),  # Added intermediate layer
+            nn.BatchNorm1d(512),
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=0.4),  # Added dropout
+            nn.Linear(512, num_classes),  # Final output layer
         )
         
         # Load checkpoint
@@ -2440,11 +2444,14 @@ def detect_food_v2(current_user):
         if img.mode != 'RGB':
             img = img.convert('RGB')
         
-        # Image preprocessing
+        # Image preprocessing - match training preprocessing
         preprocess = transforms.Compose([
-            transforms.Resize(PYTORCH_IMG_SIZE),
+            transforms.Resize((224, 224)),
             transforms.ToTensor(),
-            transforms.Lambda(lambda x: x * 255.0),
+            transforms.Normalize(
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225]
+            ),
         ])
         
         img_tensor = preprocess(img)
@@ -2483,13 +2490,19 @@ def detect_food_v2(current_user):
                 'confidence': round(prob.item(), 3)
             })
         
+        # Add accuracy warning for low confidence
+        message = 'Food identified successfully'
+        if confidence < 0.75:
+            message = f'Low confidence detection. Please verify if this is {detected_food}.'
+        
         return jsonify({
             'success': True,
             'data': {
                 'foodName': detected_food,
                 'confidence': round(confidence, 2),
                 'top3Predictions': top3_predictions,
-                'message': 'Food identified successfully'
+                'message': message,
+                'lowConfidence': confidence < 0.75
             }
         }), 200
         
