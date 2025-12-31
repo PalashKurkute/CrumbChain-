@@ -12,6 +12,16 @@
 .swiftpm/
 migrate_working_dir/
 
+# Environment variables (NEVER commit secrets!)
+.env
+.env.local
+.env.*.local
+backend/.env
+backend/venv_gpu/
+backend/venv/
+**/__pycache__/
+*.pyc
+
 # IntelliJ related
 *.iml
 *.ipr
